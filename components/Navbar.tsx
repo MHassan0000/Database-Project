@@ -8,6 +8,7 @@ interface NavbarProps {
 }
 
 import { Package, BarChart2 } from "lucide-react";
+import Link from "next/link";
 
 export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -23,6 +24,7 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3">
+
             <div className="w-9 h-9 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-200">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -30,8 +32,9 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
                 <line x1="12" y1="22.08" x2="12" y2="12" />
               </svg>
             </div>
+
             <div>
-              <h1 className="text-lg font-bold tracking-tight bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold tracking-tight text-black">
                 ProductVault
               </h1>
             </div>
@@ -43,11 +46,10 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.id
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
               >
                 <span>{tab.icon}</span>
                 {tab.label}
@@ -85,11 +87,10 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
                     onTabChange(tab.id);
                     setMobileOpen(false);
                   }}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                    activeTab === tab.id
-                      ? "bg-indigo-50 text-indigo-600"
-                      : "text-slate-500 hover:bg-slate-50"
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "text-slate-500 hover:bg-slate-50"
+                    }`}
                 >
                   <span>{tab.icon}</span>
                   {tab.label}
@@ -99,6 +100,6 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
           </div>
         )}
       </div>
-    </nav>
+    </nav >
   );
 }

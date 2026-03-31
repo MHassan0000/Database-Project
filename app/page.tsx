@@ -10,6 +10,7 @@ import ProductModal from "@/components/ProductModal";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import Pagination from "@/components/Pagination";
 import Reports from "@/components/Reports";
+import { Database } from "lucide-react";
 
 function Dashboard() {
   const { showToast } = useToast();
@@ -205,7 +206,7 @@ function Dashboard() {
                       Seeding...
                     </>
                   ) : (
-                    <>🌱 Seed Sample Data</>
+                    <><Database className="w-4 h-4 mr-1" /> Seed Sample Data</>
                   )}
                 </button>
               )}
