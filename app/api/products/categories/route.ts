@@ -1,6 +1,6 @@
 import { query, initializeDatabase } from "@/lib/db";
 
-// GET /api/products/categories — fetch all unique categories
+// GET /api/products/categories - fetch all unique categories
 export async function GET() {
   try {
     await initializeDatabase();

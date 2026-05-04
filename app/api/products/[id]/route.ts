@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query, initializeDatabase, withTransaction } from "@/lib/db";
 
-// GET /api/products/[id] — fetch a single product
+// GET /api/products/[id] - fetch a single product
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -28,7 +28,7 @@ export async function GET(
   }
 }
 
-// PUT /api/products/[id] — update a product
+// PUT /api/products/[id] - update a product
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -37,7 +37,7 @@ export async function PUT(
     await initializeDatabase();
     const { id } = await params;
     const body = await request.json();
-    const { name, description, price, category, stock, brand, rating, image_url, sku } =
+    const { name, description, price, category, stock, brand, rating, image_url, sku, status } =
       body;
 
     if (!name || name.trim() === "") {
@@ -58,8 +58,8 @@ export async function PUT(
       `UPDATE products
        SET name = $1, description = $2, price = $3, category = $4,
            stock = $5, brand = $6, rating = $7, image_url = $8, sku = $9,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
+           status = $10, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $11
        RETURNING *`,
       [
         name.trim(),
@@ -71,6 +71,7 @@ export async function PUT(
         Number(rating) || 0,
         image_url || "",
         sku || "",
+        status || "active",
         parseInt(id),
       ]
     );
@@ -89,7 +90,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/products/[id] — delete a product
+// DELETE /api/products/[id] - delete a product
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -115,6 +116,87 @@ export async function DELETE(
     console.error("DELETE /api/products/[id] error:", error);
     return Response.json(
       { error: "Failed to delete product" },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH /api/products/[id] - adjust stock with ledger entry
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await initializeDatabase();
+    const { id } = await params;
+    const body = await request.json();
+    const { delta, reason, note } = body as {
+      delta?: number;
+      reason?: string;
+      note?: string;
+    };
+
+    if (delta === undefined || delta === null || isNaN(Number(delta)) || Number(delta) === 0) {
+      return Response.json(
+        { error: "Delta must be a non-zero number" },
+        { status: 400 }
+      );
+    }
+
+    const updatedProduct = await withTransaction(async (client) => {
+      const productResult = await client.query(
+        "SELECT id, stock FROM products WHERE id = $1 FOR UPDATE",
+        [parseInt(id)]
+      );
+
+      if (productResult.rows.length === 0) {
+        return null;
+      }
+
+      const currentStock = Number(productResult.rows[0].stock);
+      const nextStock = currentStock + Number(delta);
+      if (nextStock < 0) {
+        throw new Error("Stock cannot go below zero");
+      }
+
+      const updateResult = await client.query(
+        "UPDATE products SET stock = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *",
+        [nextStock, parseInt(id)]
+      );
+
+      await client.query(
+        `INSERT INTO stock_movements (product_id, delta, reason, note, stock_after)
+         VALUES ($1, $2, $3, $4, $5)` ,
+        [
+          parseInt(id),
+          Number(delta),
+          reason || "adjustment",
+          note || "",
+          nextStock,
+        ]
+      );
+
+      return updateResult.rows[0];
+    });
+
+    if (!updatedProduct) {
+      return Response.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    return Response.json({
+      message: "Stock updated",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Stock cannot go below zero") {
+      return Response.json(
+        { error: "Stock cannot go below zero" },
+        { status: 400 }
+      );
+    }
+    console.error("PATCH /api/products/[id] error:", error);
+    return Response.json(
+      { error: "Failed to update stock" },
       { status: 500 }
     );
   }

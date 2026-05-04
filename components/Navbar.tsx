@@ -7,8 +7,7 @@ interface NavbarProps {
   onTabChange: (tab: string) => void;
 }
 
-import { Package, BarChart2 } from "lucide-react";
-import Link from "next/link";
+import { Package, BarChart2, Sparkle } from "lucide-react";
 
 export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -19,36 +18,33 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
   ];
 
   return (
-    <nav className="glass sticky top-0 z-50 border-b border-border">
+    <nav className="glass sticky top-0 z-50 border-b border-[#1c2233]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between min-h-[72px] py-3">
           {/* Logo */}
           <div className="flex items-center gap-3">
-
-            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-200">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                <line x1="12" y1="22.08" x2="12" y2="12" />
-              </svg>
+            <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-[#1a2c3b] via-[#0f2532] to-[#0a0f17] flex items-center justify-center shadow-lg shadow-black/40 border border-[#243043]">
+              <Sparkle className="w-5 h-5 text-[#f4d06f]" />
             </div>
-
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-black">
+            <div className="space-y-0.5">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-white font-[var(--font-display)]">
                 ProductVault
               </h1>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[#667085]">
+                Dark Ambient Suite
+              </p>
             </div>
           </div>
 
           {/* Desktop Tabs */}
-          <div className="hidden md:flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+          <div className="hidden md:flex items-center gap-1 bg-[#0f141c] rounded-2xl p-1.5 border border-[#1c2233]">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.id
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === tab.id
+                  ? "bg-[#1a2231] text-[#7dd3fc] shadow-md shadow-black/30 border border-[#243043]"
+                  : "text-[#8b93a7] hover:text-white"
                   }`}
               >
                 <span>{tab.icon}</span>
@@ -60,7 +56,7 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
           {/* Mobile Hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="md:hidden p-2 rounded-xl hover:bg-[#141a26] transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {mobileOpen ? (
@@ -88,8 +84,8 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
                     setMobileOpen(false);
                   }}
                   className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-slate-500 hover:bg-slate-50"
+                    ? "bg-[#1a2231] text-[#7dd3fc]"
+                    : "text-[#8b93a7] hover:bg-[#141a26]"
                     }`}
                 >
                   <span>{tab.icon}</span>

@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 
 const pool = new Pool({
   user: process.env.PG_USER || "postgres",
@@ -18,6 +18,21 @@ export async function query(text: string, params?: (string | number | null | boo
   }
 }
 
+export async function withTransaction<T>(handler: (client: PoolClient) => Promise<T>) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await handler(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function initializeDatabase() {
   const createTableQuery = `
     CREATE TABLE IF NOT EXISTS products (
@@ -31,9 +46,25 @@ export async function initializeDatabase() {
       rating FLOAT DEFAULT 0,
       image_url TEXT,
       sku VARCHAR(50),
+      status VARCHAR(20) NOT NULL DEFAULT 'active',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  `;
+
+  const ensureStatusColumn = `
+    ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+  `;
+
+  const ensureCreatedAtColumn = `
+    ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+  `;
+
+  const ensureUpdatedAtColumn = `
+    ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
   `;
 
   const createTriggerFn = `
@@ -61,9 +92,44 @@ export async function initializeDatabase() {
     $$;
   `;
 
+  const createStockMovementsTable = `
+    CREATE TABLE IF NOT EXISTS stock_movements (
+      id SERIAL PRIMARY KEY,
+      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      delta INTEGER NOT NULL,
+      reason VARCHAR(60) NOT NULL DEFAULT 'adjustment',
+      note TEXT,
+      stock_after INTEGER NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  const indexStatements = [
+    `CREATE INDEX IF NOT EXISTS products_search_idx
+      ON products USING GIN (
+        to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(brand, '') || ' ' || coalesce(sku, ''))
+      )`,
+    "CREATE INDEX IF NOT EXISTS products_category_idx ON products(category)",
+    "CREATE INDEX IF NOT EXISTS products_status_idx ON products(status)",
+    "CREATE INDEX IF NOT EXISTS products_created_at_idx ON products(created_at DESC)",
+    "CREATE INDEX IF NOT EXISTS stock_movements_product_idx ON stock_movements(product_id)",
+    "CREATE INDEX IF NOT EXISTS stock_movements_created_at_idx ON stock_movements(created_at DESC)",
+  ];
+
   await query(createTableQuery);
+  await query(ensureStatusColumn);
+  await query(ensureCreatedAtColumn);
+  await query(ensureUpdatedAtColumn);
   await query(createTriggerFn);
   await query(createTrigger);
+  await query(createStockMovementsTable);
+  for (const statement of indexStatements) {
+    try {
+      await query(statement);
+    } catch (error) {
+      console.warn("Index creation failed:", statement, error);
+    }
+  }
 }
 
 export default pool;

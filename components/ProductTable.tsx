@@ -1,20 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Product } from "@/lib/types";
-import { 
-  Star, 
-  StarHalf, 
-  Laptop, 
-  Shirt, 
-  Home, 
-  Armchair, 
-  Trophy, 
-  Pizza, 
-  Book, 
-  Gamepad2, 
-  Sparkles, 
-  CarFront, 
-  Package 
+import {
+  Star,
+  Laptop,
+  Shirt,
+  Home,
+  Armchair,
+  Trophy,
+  Pizza,
+  Book,
+  Gamepad2,
+  Sparkles,
+  CarFront,
+  Package,
 } from "lucide-react";
 
 interface ProductTableProps {
@@ -22,6 +22,8 @@ interface ProductTableProps {
   loading: boolean;
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
+  onSelectChange?: (ids: number[]) => void;
+  onAdjustStock?: (product: Product) => void;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -31,18 +33,18 @@ function StarRating({ rating }: { rating: number }) {
 
   for (let i = 0; i < 5; i++) {
     if (i < fullStars) {
-      stars.push(<Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />);
+      stars.push(<Star key={i} className="w-3.5 h-3.5 fill-[#f4d06f] text-[#f4d06f]" />);
     } else if (i === fullStars && hasHalf) {
       stars.push(
         <div key={i} className="relative">
-          <Star className="w-3.5 h-3.5 text-slate-200" />
+          <Star className="w-3.5 h-3.5 text-[#2a3040]" />
           <div className="absolute inset-0 overflow-hidden w-[50%]">
-            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <Star className="w-3.5 h-3.5 fill-[#f4d06f] text-[#f4d06f]" />
           </div>
         </div>
       );
     } else {
-      stars.push(<Star key={i} className="w-3.5 h-3.5 text-slate-200" />);
+      stars.push(<Star key={i} className="w-3.5 h-3.5 text-[#2a3040]" />);
     }
   }
   return <span className="flex items-center gap-0.5">{stars}</span>;
@@ -51,21 +53,21 @@ function StarRating({ rating }: { rating: number }) {
 function StockBadge({ stock }: { stock: number }) {
   if (stock === 0)
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-100">
-        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-500/10 text-red-200 border border-red-500/30">
+        <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
         Out of Stock
       </span>
     );
   if (stock <= 10)
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse-soft" />
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-400/10 text-amber-100 border border-amber-400/30">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse-soft" />
         Low: {stock}
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-200 border border-emerald-500/30">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
       {stock}
     </span>
   );
@@ -73,18 +75,18 @@ function StockBadge({ stock }: { stock: number }) {
 
 function CategoryBadge({ category }: { category: string }) {
   const colors: Record<string, string> = {
-    Electronics: "bg-blue-50 text-blue-600 border-blue-100",
-    Clothing: "bg-pink-50 text-pink-600 border-pink-100",
-    Home: "bg-orange-50 text-orange-600 border-orange-100",
-    Furniture: "bg-purple-50 text-purple-600 border-purple-100",
-    Sports: "bg-green-50 text-green-600 border-green-100",
-    Food: "bg-yellow-50 text-yellow-700 border-yellow-100",
-    Books: "bg-indigo-50 text-indigo-600 border-indigo-100",
-    Toys: "bg-cyan-50 text-cyan-600 border-cyan-100",
-    Beauty: "bg-rose-50 text-rose-600 border-rose-100",
-    Automotive: "bg-slate-100 text-slate-600 border-slate-200",
+    Electronics: "bg-sky-400/10 text-sky-200 border-sky-400/30",
+    Clothing: "bg-rose-400/10 text-rose-200 border-rose-400/30",
+    Home: "bg-amber-400/10 text-amber-100 border-amber-400/30",
+    Furniture: "bg-violet-400/10 text-violet-200 border-violet-400/30",
+    Sports: "bg-emerald-400/10 text-emerald-200 border-emerald-400/30",
+    Food: "bg-yellow-400/10 text-yellow-100 border-yellow-400/30",
+    Books: "bg-indigo-400/10 text-indigo-200 border-indigo-400/30",
+    Toys: "bg-cyan-400/10 text-cyan-200 border-cyan-400/30",
+    Beauty: "bg-pink-400/10 text-pink-200 border-pink-400/30",
+    Automotive: "bg-slate-400/10 text-slate-200 border-slate-400/30",
   };
-  const defaultColor = "bg-slate-50 text-slate-600 border-slate-200";
+  const defaultColor = "bg-slate-400/10 text-slate-200 border-slate-400/30";
 
   return (
     <span
@@ -97,9 +99,30 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    active: "bg-emerald-400/10 text-emerald-200 border-emerald-400/30",
+    draft: "bg-amber-400/10 text-amber-100 border-amber-400/30",
+    archived: "bg-slate-400/10 text-slate-200 border-slate-400/30",
+  };
+  const label = status?.charAt(0).toUpperCase() + status?.slice(1);
+  return (
+    <span
+      className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${
+        map[status] || "bg-slate-400/10 text-slate-200 border-slate-400/30"
+      }`}
+    >
+      {label || "Unknown"}
+    </span>
+  );
+}
+
 function SkeletonRow() {
   return (
-    <tr className="border-b border-slate-50">
+    <tr className="border-b border-[#1c2233]">
+      <td className="px-4 py-4">
+        <div className="w-4 h-4 skeleton rounded" />
+      </td>
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 skeleton rounded-xl" />
@@ -109,10 +132,11 @@ function SkeletonRow() {
           </div>
         </div>
       </td>
-      <td className="px-4 py-4"><div className="w-16 h-6 skeleton rounded-lg" /></td>
+      <td className="px-4 py-4 hidden sm:table-cell"><div className="w-16 h-6 skeleton rounded-lg" /></td>
       <td className="px-4 py-4"><div className="w-16 h-4 skeleton" /></td>
-      <td className="px-4 py-4"><div className="w-20 h-6 skeleton rounded-lg" /></td>
-      <td className="px-4 py-4"><div className="w-16 h-4 skeleton" /></td>
+      <td className="px-4 py-4 hidden md:table-cell"><div className="w-20 h-6 skeleton rounded-lg" /></td>
+      <td className="px-4 py-4 hidden lg:table-cell"><div className="w-16 h-4 skeleton" /></td>
+      <td className="px-4 py-4 hidden lg:table-cell"><div className="w-16 h-6 skeleton rounded-lg" /></td>
       <td className="px-4 py-4"><div className="w-20 h-8 skeleton rounded-lg" /></td>
     </tr>
   );
@@ -123,20 +147,51 @@ export default function ProductTable({
   loading,
   onEdit,
   onDelete,
+  onSelectChange,
+  onAdjustStock,
 }: ProductTableProps) {
+  const [selected, setSelected] = useState<number[]>([]);
+
+  useEffect(() => {
+    setSelected([]);
+    onSelectChange?.([]);
+  }, [products, onSelectChange]);
+
+  const toggleAll = (checked: boolean) => {
+    const next = checked ? products.map((product) => product.id) : [];
+    setSelected(next);
+    onSelectChange?.(next);
+  };
+
+  const toggleOne = (id: number) => {
+    const next = selected.includes(id)
+      ? selected.filter((item) => item !== id)
+      : [...selected, id];
+    setSelected(next);
+    onSelectChange?.(next);
+  };
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="ambient-card rounded-3xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Product</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Price</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rating</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+              <tr className="border-b border-[#1c2233] bg-[#0f141c]">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={products.length > 0 && selected.length === products.length}
+                    onChange={(e) => toggleAll(e.target.checked)}
+                    className="accent-[#7dd3fc]"
+                  />
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">Product</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden sm:table-cell">Category</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">Price</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden md:table-cell">Stock</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">Rating</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">Status</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -152,16 +207,16 @@ export default function ProductTable({
 
   if (!products || products.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
-        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-50 flex items-center justify-center">
+      <div className="ambient-card rounded-3xl p-12 text-center">
+        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-[#0f141c] flex items-center justify-center border border-[#1c2333]">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
             <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
             <line x1="12" y1="22.08" x2="12" y2="12" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-slate-700 mb-1">No products found</h3>
-        <p className="text-sm text-slate-400">
+        <h3 className="text-lg font-semibold text-white mb-1">No products found</h3>
+        <p className="text-sm text-[#8b93a7]">
           Try adjusting your filters or add your first product.
         </p>
       </div>
@@ -169,27 +224,38 @@ export default function ProductTable({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+    <div className="ambient-card rounded-3xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <tr className="border-b border-[#1c2233] bg-[#0f141c]">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">
+                <input
+                  type="checkbox"
+                  checked={products.length > 0 && selected.length === products.length}
+                  onChange={(e) => toggleAll(e.target.checked)}
+                  className="accent-[#7dd3fc]"
+                />
+              </th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">
                 Product
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden sm:table-cell">
                 Category
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">
                 Price
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden md:table-cell">
                 Stock
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">
                 Rating
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">
+                Status
+              </th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -198,12 +264,22 @@ export default function ProductTable({
             {products.map((product) => (
               <tr
                 key={product.id}
-                className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors group"
+                className="border-b border-[#141a26] hover:bg-[#111724] transition-colors group"
               >
+                {/* Select */}
+                <td className="px-4 py-3.5">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(product.id)}
+                    onChange={() => toggleOne(product.id)}
+                    className="accent-[#7dd3fc]"
+                  />
+                </td>
+
                 {/* Product */}
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-500 shrink-0 overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#131a26] to-[#1b2333] flex items-center justify-center text-[#7dd3fc] shrink-0 overflow-hidden border border-[#1c2333]">
                       {product.image_url ? (
                         <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                       ) : (
@@ -211,11 +287,11 @@ export default function ProductTable({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate max-w-50">
+                      <p className="text-sm font-semibold text-white truncate max-w-50">
                         {product.name}
                       </p>
-                      <p className="text-xs text-slate-400 truncate max-w-50">
-                        {product.brand && `${product.brand} • `}
+                      <p className="text-xs text-[#8b93a7] truncate max-w-50">
+                        {product.brand && `${product.brand} - `}
                         {product.sku || "No SKU"}
                       </p>
                     </div>
@@ -229,7 +305,7 @@ export default function ProductTable({
 
                 {/* Price */}
                 <td className="px-4 py-3.5">
-                  <span className="text-sm font-bold text-slate-800">
+                  <span className="text-sm font-bold text-white">
                     ${Number(product.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </span>
                 </td>
@@ -243,18 +319,35 @@ export default function ProductTable({
                 <td className="px-4 py-3.5 hidden lg:table-cell">
                   <div className="flex items-center gap-1.5">
                     <StarRating rating={Number(product.rating)} />
-                    <span className="text-xs text-slate-400 font-medium">
+                    <span className="text-xs text-[#8b93a7] font-medium">
                       {Number(product.rating).toFixed(1)}
                     </span>
                   </div>
                 </td>
 
+                {/* Status */}
+                <td className="px-4 py-3.5 hidden lg:table-cell">
+                  <StatusBadge status={product.status || "active"} />
+                </td>
+
                 {/* Actions */}
                 <td className="px-4 py-3.5">
                   <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {onAdjustStock && (
+                      <button
+                        onClick={() => onAdjustStock(product)}
+                        className="p-2 rounded-lg hover:bg-[#141a26] text-[#8b93a7] hover:text-white transition-all"
+                        title="Adjust Stock"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 12h18" />
+                          <path d="M12 3v18" />
+                        </svg>
+                      </button>
+                    )}
                     <button
                       onClick={() => onEdit(product)}
-                      className="p-2 rounded-lg hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-all"
+                      className="p-2 rounded-lg hover:bg-[#1a2231] text-[#8b93a7] hover:text-[#7dd3fc] transition-all"
                       title="Edit"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -264,7 +357,7 @@ export default function ProductTable({
                     </button>
                     <button
                       onClick={() => onDelete(product)}
-                      className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-all"
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all"
                       title="Delete"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

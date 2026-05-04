@@ -35,6 +35,7 @@ const emptyForm: ProductFormData = {
   rating: "",
   image_url: "",
   sku: "",
+  status: "active",
 };
 
 export default function ProductModal({
@@ -59,6 +60,7 @@ export default function ProductModal({
         rating: product.rating || "",
         image_url: product.image_url || "",
         sku: product.sku || "",
+        status: product.status || "active",
       });
     } else {
       setForm(emptyForm);
@@ -123,14 +125,14 @@ export default function ProductModal({
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
+      <div className="relative ambient-card glow-border rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1c2333]">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">
+            <h2 className="text-xl font-semibold text-white">
               {isEditing ? "Edit Product" : "Add New Product"}
             </h2>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-[#8b93a7] mt-0.5">
               {isEditing
                 ? "Update the product information below"
                 : "Fill in the details to create a new product"}
@@ -138,7 +140,7 @@ export default function ProductModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
+            className="p-2 rounded-xl hover:bg-[#141a26] transition-colors text-[#8b93a7] hover:text-white"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12" />
@@ -152,7 +154,7 @@ export default function ProductModal({
             {/* Row: Name + SKU */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-white mb-1.5">
                   Product Name <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -161,15 +163,15 @@ export default function ProductModal({
                   onChange={(e) => handleChange("name", e.target.value)}
                   placeholder="e.g. MacBook Pro 16&quot;"
                   className={`w-full px-4 py-2.5 rounded-xl border ${
-                    errors.name ? "border-red-300 bg-red-50" : "border-slate-200"
-                  } text-sm transition-all hover:border-slate-300`}
+                    errors.name ? "border-red-500/50 bg-red-500/10" : "border-[#1c2333]"
+                  } text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]`}
                 />
                 {errors.name && (
                   <p className="text-xs text-red-500 mt-1">{errors.name}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-white mb-1.5">
                   SKU
                 </label>
                 <input
@@ -177,14 +179,14 @@ export default function ProductModal({
                   value={form.sku}
                   onChange={(e) => handleChange("sku", e.target.value)}
                   placeholder="e.g. APL-001"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm transition-all hover:border-slate-300"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]"
                 />
               </div>
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label className="block text-sm font-semibold text-white mb-1.5">
                 Description
               </label>
               <textarea
@@ -192,14 +194,14 @@ export default function ProductModal({
                 onChange={(e) => handleChange("description", e.target.value)}
                 placeholder="Describe your product..."
                 rows={3}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm transition-all hover:border-slate-300 resize-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] resize-none bg-[#0f141c] text-white placeholder:text-[#667085]"
               />
             </div>
 
             {/* Row: Price + Stock + Rating */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-white mb-1.5">
                   Price ($) <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -210,15 +212,15 @@ export default function ProductModal({
                   onChange={(e) => handleChange("price", e.target.value)}
                   placeholder="0.00"
                   className={`w-full px-4 py-2.5 rounded-xl border ${
-                    errors.price ? "border-red-300 bg-red-50" : "border-slate-200"
-                  } text-sm transition-all hover:border-slate-300`}
+                    errors.price ? "border-red-500/50 bg-red-500/10" : "border-[#1c2333]"
+                  } text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]`}
                 />
                 {errors.price && (
                   <p className="text-xs text-red-500 mt-1">{errors.price}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-white mb-1.5">
                   Stock
                 </label>
                 <input
@@ -228,15 +230,15 @@ export default function ProductModal({
                   onChange={(e) => handleChange("stock", e.target.value)}
                   placeholder="0"
                   className={`w-full px-4 py-2.5 rounded-xl border ${
-                    errors.stock ? "border-red-300 bg-red-50" : "border-slate-200"
-                  } text-sm transition-all hover:border-slate-300`}
+                    errors.stock ? "border-red-500/50 bg-red-500/10" : "border-[#1c2333]"
+                  } text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]`}
                 />
                 {errors.stock && (
                   <p className="text-xs text-red-500 mt-1">{errors.stock}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-white mb-1.5">
                   Rating (0-5)
                 </label>
                 <input
@@ -248,8 +250,8 @@ export default function ProductModal({
                   onChange={(e) => handleChange("rating", e.target.value)}
                   placeholder="4.5"
                   className={`w-full px-4 py-2.5 rounded-xl border ${
-                    errors.rating ? "border-red-300 bg-red-50" : "border-slate-200"
-                  } text-sm transition-all hover:border-slate-300`}
+                    errors.rating ? "border-red-500/50 bg-red-500/10" : "border-[#1c2333]"
+                  } text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]`}
                 />
                 {errors.rating && (
                   <p className="text-xs text-red-500 mt-1">{errors.rating}</p>
@@ -260,13 +262,13 @@ export default function ProductModal({
             {/* Row: Category + Brand */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-white mb-1.5">
                   Category
                 </label>
                 <select
                   value={form.category}
                   onChange={(e) => handleChange("category", e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm transition-all hover:border-slate-300 bg-white appearance-none cursor-pointer"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white appearance-none cursor-pointer"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -276,7 +278,7 @@ export default function ProductModal({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-white mb-1.5">
                   Brand
                 </label>
                 <input
@@ -284,39 +286,56 @@ export default function ProductModal({
                   value={form.brand}
                   onChange={(e) => handleChange("brand", e.target.value)}
                   placeholder="e.g. Apple"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm transition-all hover:border-slate-300"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]"
                 />
               </div>
             </div>
 
-            {/* Image URL */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Image URL
-              </label>
-              <input
-                type="text"
-                value={form.image_url}
-                onChange={(e) => handleChange("image_url", e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm transition-all hover:border-slate-300"
-              />
+            {/* Row: Status + Image URL */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-white mb-1.5">
+                  Status
+                </label>
+                <select
+                  value={form.status}
+                  onChange={(e) => handleChange("status", e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white appearance-none cursor-pointer"
+                >
+                  <option value="active">Active</option>
+                  <option value="draft">Draft</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-white mb-1.5">
+                  Image URL
+                </label>
+                <input
+                  type="text"
+                  value={form.image_url}
+                  onChange={(e) => handleChange("image_url", e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]"
+                />
+              </div>
             </div>
+
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#1c2333] bg-[#0f141c]">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-[#8b93a7] hover:bg-[#141a26] transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all shadow-md shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-2.5 rounded-xl text-sm font-semibold text-[#0b0f17] bg-linear-to-r from-[#f4d06f] to-[#7dd3fc] hover:from-[#f6e089] hover:to-[#9be0ff] transition-all shadow-lg shadow-black/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <>

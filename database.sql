@@ -11,8 +11,19 @@ CREATE TABLE IF NOT EXISTS products (
     rating FLOAT DEFAULT 0,
     image_url TEXT,
     sku VARCHAR(50),
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS stock_movements (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    delta INTEGER NOT NULL,
+    reason VARCHAR(60) NOT NULL DEFAULT 'adjustment',
+    note TEXT,
+    stock_after INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -46,6 +57,9 @@ WHERE
 ORDER BY created_at DESC 
 LIMIT 12 OFFSET 0;
 
+-- READ: Retrieve products by status
+SELECT * FROM products WHERE status = 'active' ORDER BY created_at DESC;
+
 -- READ: Count products for pagination
 SELECT COUNT(*) FROM products;
 
@@ -56,8 +70,8 @@ SELECT * FROM products WHERE id = $1;
 UPDATE products 
 SET 
     name = $1, description = $2, price = $3, category = $4, 
-    stock = $5, brand = $6, rating = $7, sku = $8, image_url = $9
-WHERE id = $10 
+    stock = $5, brand = $6, rating = $7, sku = $8, image_url = $9, status = $10
+WHERE id = $11 
 RETURNING *;
 
 -- DELETE: Remove a product
@@ -98,3 +112,13 @@ SELECT * FROM products ORDER BY created_at DESC LIMIT 5;
 
 -- List unique categories for Filter dropdown
 SELECT DISTINCT category FROM products WHERE category IS NOT NULL ORDER BY category;
+
+-- Status distribution
+SELECT status, COUNT(*) as count FROM products GROUP BY status;
+
+-- Stock movement ledger
+SELECT sm.*, p.name, p.sku, p.brand, p.category, p.status
+FROM stock_movements sm
+JOIN products p ON p.id = sm.product_id
+ORDER BY sm.created_at DESC
+LIMIT 50;

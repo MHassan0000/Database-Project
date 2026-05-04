@@ -48,16 +48,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   };
 
   const colorMap: Record<ToastType, string> = {
-    success: "bg-emerald-50 border-emerald-200 text-emerald-800",
-    error: "bg-red-50 border-red-200 text-red-800",
-    info: "bg-blue-50 border-blue-200 text-blue-800",
-    warning: "bg-amber-50 border-amber-200 text-amber-800",
+    success: "bg-emerald-500/10 border-emerald-500/30 text-emerald-100",
+    error: "bg-red-500/10 border-red-500/30 text-red-100",
+    info: "bg-sky-500/10 border-sky-500/30 text-sky-100",
+    warning: "bg-amber-500/10 border-amber-500/30 text-amber-100",
   };
 
   const iconBgMap: Record<ToastType, string> = {
     success: "bg-emerald-500",
     error: "bg-red-500",
-    info: "bg-blue-500",
+    info: "bg-sky-500",
     warning: "bg-amber-500",
   };
 
@@ -68,7 +68,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${
+            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-lg backdrop-blur ${
               colorMap[toast.type]
             } ${toast.exiting ? "animate-toast-out" : "animate-toast-in"}`}
           >
@@ -82,7 +82,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               onClick={() =>
                 setToasts((prev) => prev.filter((t) => t.id !== toast.id))
               }
-              className="shrink-0 text-current opacity-50 hover:opacity-100 transition-opacity"
+              className="shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity"
             >
               ✕
             </button>

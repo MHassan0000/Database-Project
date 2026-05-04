@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
 
-// GET /api/products — fetch all products with optional filters, search, sort, pagination
+// GET /api/products - fetch all products with optional filters, search, sort, pagination
 export async function GET(request: NextRequest) {
   try {
     await initializeDatabase();
@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get("maxPrice");
     const minRating = searchParams.get("minRating");
     const search = searchParams.get("search");
+    const status = searchParams.get("status");
     const sortBy = searchParams.get("sortBy") || "created_at";
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const page = parseInt(searchParams.get("page") || "1");
@@ -46,11 +47,17 @@ export async function GET(request: NextRequest) {
       paramIndex++;
     }
 
+    if (status && status !== "all") {
+      conditions.push(`status = $${paramIndex}`);
+      values.push(status);
+      paramIndex++;
+    }
+
     if (search) {
       conditions.push(
-        `(LOWER(name) LIKE $${paramIndex} OR LOWER(description) LIKE $${paramIndex} OR LOWER(brand) LIKE $${paramIndex} OR LOWER(sku) LIKE $${paramIndex})`
+        `to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(brand, '') || ' ' || coalesce(sku, '')) @@ plainto_tsquery('simple', $${paramIndex})`
       );
-      values.push(`%${search.toLowerCase()}%`);
+      values.push(search);
       paramIndex++;
     }
 
@@ -65,6 +72,7 @@ export async function GET(request: NextRequest) {
       "stock",
       "brand",
       "rating",
+      "status",
       "created_at",
       "updated_at",
     ];
@@ -102,13 +110,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/products — create a new product
+// POST /api/products - create a new product
 export async function POST(request: NextRequest) {
   try {
     await initializeDatabase();
 
     const body = await request.json();
-    const { name, description, price, category, stock, brand, rating, image_url, sku } =
+    const { name, description, price, category, stock, brand, rating, image_url, sku, status } =
       body;
 
     if (!name || name.trim() === "") {
@@ -133,8 +141,8 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await query(
-      `INSERT INTO products (name, description, price, category, stock, brand, rating, image_url, sku)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO products (name, description, price, category, stock, brand, rating, image_url, sku, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         name.trim(),
@@ -146,6 +154,7 @@ export async function POST(request: NextRequest) {
         Number(rating) || 0,
         image_url || "",
         sku || "",
+        status || "active",
       ]
     );
 

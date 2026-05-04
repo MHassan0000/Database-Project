@@ -42,10 +42,10 @@ export default function Pagination({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-      <p className="text-sm text-slate-500">
-        Showing <span className="font-semibold text-slate-700">{start}</span> to{" "}
-        <span className="font-semibold text-slate-700">{end}</span> of{" "}
-        <span className="font-semibold text-slate-700">{total}</span> products
+      <p className="text-sm text-[#8b93a7]">
+        Showing <span className="font-semibold text-white">{start}</span> to{" "}
+        <span className="font-semibold text-white">{end}</span> of{" "}
+        <span className="font-semibold text-white">{total}</span> products
       </p>
 
       <div className="flex items-center gap-1">
@@ -53,7 +53,7 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-600"
+          className="p-2 rounded-lg border border-[#1c2333] hover:bg-[#141a26] disabled:opacity-40 disabled:cursor-not-allowed transition-all text-white"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
@@ -63,7 +63,7 @@ export default function Pagination({
         {/* Page numbers */}
         {getPageNumbers().map((p, i) =>
           typeof p === "string" ? (
-            <span key={`dots-${i}`} className="px-2 text-slate-400 text-sm">
+            <span key={`dots-${i}`} className="px-2 text-[#8b93a7] text-sm">
               …
             </span>
           ) : (
@@ -72,8 +72,8 @@ export default function Pagination({
               onClick={() => onPageChange(p)}
               className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
                 p === page
-                  ? "bg-indigo-500 text-white shadow-md shadow-indigo-200"
-                  : "text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  ? "bg-[#7dd3fc] text-[#0b0f17] shadow-md shadow-black/30"
+                  : "text-white hover:bg-[#141a26] border border-[#1c2333]"
               }`}
             >
               {p}
@@ -85,7 +85,7 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-600"
+          className="p-2 rounded-lg border border-[#1c2333] hover:bg-[#141a26] disabled:opacity-40 disabled:cursor-not-allowed transition-all text-white"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="9 18 15 12 9 6" />

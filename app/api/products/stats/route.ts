@@ -1,6 +1,6 @@
 import { query, initializeDatabase } from "@/lib/db";
 
-// GET /api/products/stats — fetch statistics and reports
+// GET /api/products/stats - fetch statistics and reports
 export async function GET() {
   try {
     await initializeDatabase();
@@ -43,13 +43,28 @@ export async function GET() {
     const categoryResult = await query(
       "SELECT category, COUNT(*) as count FROM products GROUP BY category ORDER BY count DESC"
     );
-    const categoryCounts = categoryResult.rows;
+    const categoryCounts = categoryResult.rows.map((row) => ({
+      category: row.category,
+      count: Number(row.count),
+    }));
 
     // Brand distribution
     const brandResult = await query(
       "SELECT brand, COUNT(*) as count FROM products WHERE brand != '' GROUP BY brand ORDER BY count DESC LIMIT 10"
     );
-    const brandCounts = brandResult.rows;
+    const brandCounts = brandResult.rows.map((row) => ({
+      brand: row.brand,
+      count: Number(row.count),
+    }));
+
+    // Status distribution
+    const statusResult = await query(
+      "SELECT status, COUNT(*) as count FROM products GROUP BY status ORDER BY count DESC"
+    );
+    const statusCounts = statusResult.rows.map((row) => ({
+      status: row.status,
+      count: Number(row.count),
+    }));
 
     // Top rated
     const topRatedResult = await query(
@@ -67,7 +82,10 @@ export async function GET() {
     const priceRangeResult = await query(
       "SELECT MIN(price) as min_price, MAX(price) as max_price FROM products"
     );
-    const priceRange = priceRangeResult.rows[0];
+    const priceRange = {
+      min_price: parseFloat(priceRangeResult.rows[0].min_price) || 0,
+      max_price: parseFloat(priceRangeResult.rows[0].max_price) || 0,
+    };
 
     return Response.json({
       totalProducts,
@@ -78,6 +96,7 @@ export async function GET() {
       outOfStockCount,
       categoryCounts,
       brandCounts,
+      statusCounts,
       topRated,
       recentlyAdded,
       priceRange,
