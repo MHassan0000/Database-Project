@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Product, ProductFormData, PaginatedResponse } from "@/lib/types";
 import { ToastProvider, useToast } from "@/components/Toast";
 import Navbar from "@/components/Navbar";
+import Sidebar from "@/components/Sidebar";
 import FilterBar from "@/components/FilterBar";
 import ProductTable from "@/components/ProductTable";
 import ProductModal from "@/components/ProductModal";
@@ -14,6 +15,12 @@ import StockAdjustModal from "@/components/StockAdjustModal";
 import DashboardStats from "@/components/DashboardStats";
 import BulkActions from "@/components/BulkActions";
 import InventoryAlerts from "@/components/InventoryAlerts";
+import AdvancedCharts from "@/components/AdvancedCharts";
+import QuickActions from "@/components/QuickActions";
+import InsightsPanel from "@/components/InsightsPanel";
+import AutomationCenter from "@/components/AutomationCenter";
+import SecurityCenter from "@/components/SecurityCenter";
+import SettingsCenter from "@/components/SettingsCenter";
 import { Database } from "lucide-react";
 
 function Dashboard() {
@@ -241,10 +248,12 @@ function Dashboard() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen bg-transparent">
       <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="flex">
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "dashboard" && (
           <div className="space-y-8 animate-fade-in">
               {/* Header */}
@@ -296,6 +305,12 @@ function Dashboard() {
                 setStockAdjustOpen(true);
               }}
             />
+
+            <AdvancedCharts products={data.products} />
+
+            <InsightsPanel products={data.products} />
+
+            <QuickActions />
 
             <BulkActions
               selectedCount={selectedIds.length}
@@ -379,10 +394,181 @@ function Dashboard() {
             <Reports />
           </div>
         )}
-      </main>
+
+        {activeTab === "catalog" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#7dd3fc] border border-[#1c2333]">
+                Catalog
+                <span className="w-1.5 h-1.5 rounded-full bg-[#7dd3fc]" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+                Product Catalog
+              </h2>
+              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+                Curate and manage the full product lifecycle from draft to archive.
+              </p>
+            </div>
+            <FilterBar
+              search={search}
+              onSearchChange={setSearch}
+              category={category}
+              onCategoryChange={setCategory}
+              status={status}
+              onStatusChange={setStatus}
+              minPrice={minPrice}
+              onMinPriceChange={setMinPrice}
+              maxPrice={maxPrice}
+              onMaxPriceChange={setMaxPrice}
+              minRating={minRating}
+              onMinRatingChange={setMinRating}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+              onClearFilters={clearFilters}
+              onAddProduct={() => {
+                setEditingProduct(null);
+                setModalOpen(true);
+              }}
+              onStockAdjust={() => {
+                setStockAdjustProductId(null);
+                setStockAdjustOpen(true);
+              }}
+              totalProducts={data.total}
+            />
+            <BulkActions
+              selectedCount={selectedIds.length}
+              onClear={() => setSelectedIds([])}
+              onApplyStatus={applyBulkStatus}
+              onDelete={bulkDelete}
+              loading={bulkLoading}
+            />
+            <ProductTable
+              products={data.products}
+              loading={loading}
+              onSelectChange={setSelectedIds}
+              onAdjustStock={(product) => {
+                setStockAdjustProductId(product.id);
+                setStockAdjustOpen(true);
+              }}
+              onEdit={(product) => {
+                setEditingProduct(product);
+                setModalOpen(true);
+              }}
+              onDelete={(product) => setDeleteProduct(product)}
+            />
+            <Pagination
+              page={data.page}
+              totalPages={data.totalPages}
+              total={data.total}
+              limit={data.limit}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+
+        {activeTab === "inventory" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#f4d06f] border border-[#1c2333]">
+                Inventory
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f4d06f]" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+                Stock Command
+              </h2>
+              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+                Monitor adjustments, alert queues, and replenishment priorities.
+              </p>
+            </div>
+            <InventoryAlerts
+              onAdjustStock={(product) => {
+                setStockAdjustProductId(product.id);
+                setStockAdjustOpen(true);
+              }}
+            />
+            <AdvancedCharts products={data.products} />
+          </div>
+        )}
+
+        {activeTab === "projects" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#a78bfa] border border-[#1c2333]">
+                Workflows
+                <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa]" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+                Automation Studio
+              </h2>
+              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+                Design and monitor operational flows across catalog, stock, and channels.
+              </p>
+            </div>
+            <QuickActions />
+            <InsightsPanel products={data.products} />
+          </div>
+        )}
+
+        {activeTab === "automation" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#7dd3fc] border border-[#1c2333]">
+                Automation
+                <span className="w-1.5 h-1.5 rounded-full bg-[#7dd3fc]" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+                Flow Builder
+              </h2>
+              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+                Orchestrate triggers, alerts, and smart routing across your catalog.
+              </p>
+            </div>
+            <AutomationCenter />
+          </div>
+        )}
+
+        {activeTab === "security" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#34d399] border border-[#1c2333]">
+                Security
+                <span className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+                Trust Center
+              </h2>
+              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+                Audit trail, permissions, and access governance in one place.
+              </p>
+            </div>
+            <SecurityCenter />
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#f4d06f] border border-[#1c2333]">
+                Settings
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f4d06f]" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+                Workspace Config
+              </h2>
+              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+                Tune exports, notifications, and channel sync preferences.
+              </p>
+            </div>
+            <SettingsCenter />
+          </div>
+        )}
+        </main>
+      </div>
 
       {/* Footer */}
-      <footer className="border-t border-[#1c2233] py-5 mt-auto">
+      <footer className="border-t border-[#1c2233] py-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-xs text-[#667085] text-center">
             ProductVault © {new Date().getFullYear()} - Ambient Ops Edition

@@ -7,18 +7,34 @@ interface NavbarProps {
   onTabChange: (tab: string) => void;
 }
 
-import { Package, BarChart2, Sparkle } from "lucide-react";
+import {
+  Package,
+  BarChart2,
+  Sparkle,
+  LayoutDashboard,
+  Boxes,
+  FolderKanban,
+  Shield,
+  Zap,
+  Settings,
+} from "lucide-react";
 
 export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: <Package className="w-4 h-4" /> },
+    { id: "dashboard", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: "catalog", label: "Catalog", icon: <Package className="w-4 h-4" /> },
+    { id: "inventory", label: "Inventory", icon: <Boxes className="w-4 h-4" /> },
     { id: "reports", label: "Reports", icon: <BarChart2 className="w-4 h-4" /> },
+    { id: "projects", label: "Workflows", icon: <FolderKanban className="w-4 h-4" /> },
+    { id: "automation", label: "Automation", icon: <Zap className="w-4 h-4" /> },
+    { id: "security", label: "Security", icon: <Shield className="w-4 h-4" /> },
+    { id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
   ];
 
   return (
-    <nav className="glass sticky top-0 z-50 border-b border-[#1c2233]">
+    <nav className="glass sticky top-0 z-50 border-b border-[#1c2233] lg:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between min-h-[72px] py-3">
           {/* Logo */}
@@ -37,12 +53,12 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
           </div>
 
           {/* Desktop Tabs */}
-          <div className="hidden md:flex items-center gap-1 bg-[#0f141c] rounded-2xl p-1.5 border border-[#1c2233]">
+          <div className="hidden md:flex items-center gap-1 bg-[#0f141c] rounded-2xl p-1.5 border border-[#1c2233] overflow-x-auto max-w-xl">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === tab.id
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeTab === tab.id
                   ? "bg-[#1a2231] text-[#7dd3fc] shadow-md shadow-black/30 border border-[#243043]"
                   : "text-[#8b93a7] hover:text-white"
                   }`}
