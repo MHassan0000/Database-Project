@@ -17,8 +17,8 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "ProductVault - Product Management System",
-  description: "A modern, full-stack product management dashboard built with Next.js and PostgreSQL.",
+  title: "Obsidian - Inventory Management System",
+  description: "A premium, full-stack product inventory management platform built with Next.js and PostgreSQL.",
 };
 
 export default function RootLayout({

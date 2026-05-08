@@ -63,7 +63,7 @@ export default function AutomationCenter() {
             <h3 className="text-sm font-semibold text-white">Automation Queue</h3>
             <p className="text-xs text-[#8b93a7]">Rules running across the catalog</p>
           </div>
-          <button className="px-4 py-2 rounded-xl text-xs font-semibold text-[#0b0f17] bg-linear-to-r from-[#f4d06f] to-[#7dd3fc]">
+          <button className="px-4 py-2 rounded-xl text-xs font-semibold text-black bg-white hover:bg-zinc-200 transition-colors">
             New Rule
           </button>
         </div>
@@ -76,7 +76,7 @@ export default function AutomationCenter() {
                 className="flex items-center justify-between gap-4 px-4 py-3 rounded-2xl border border-[#1c2333] bg-[#0f141c]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#121826] border border-[#1c2333] flex items-center justify-center text-[#7dd3fc]">
+                  <div className="w-10 h-10 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center text-white">
                     <Icon className="w-5 h-5" />
                   </div>
                   <div>

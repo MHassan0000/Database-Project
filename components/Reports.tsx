@@ -31,7 +31,7 @@ function StatCard({
           )}
         </div>
         <div
-          className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center text-lg group-hover:scale-110 transition-transform border border-white/5`}
+          className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center text-lg group-hover:scale-110 transition-transform border border-[#27272a]`}
         >
           {icon}
         </div>
@@ -63,9 +63,9 @@ function BarChart({
                 {item.value}
               </span>
             </div>
-            <div className="w-full bg-[#101624] rounded-full h-2">
+            <div className="w-full bg-[#18181b] rounded-full h-2">
               <div
-                className="h-2 rounded-full bg-linear-to-r from-[#7dd3fc] via-[#a78bfa] to-[#f4d06f] transition-all duration-700 ease-out"
+                className="h-2 rounded-full bg-linear-to-r from-white to-[#71717a] transition-all duration-700 ease-out"
                 style={{
                   width: `${(item.value / max) * 100}%`,
                   animationDelay: `${i * 100}ms`,
@@ -114,7 +114,7 @@ function ProductListCard({
                 ${Number(product.price).toFixed(2)}
               </p>
               <div className="flex items-center gap-1.5">
-                <Star className="w-3.5 h-3.5 fill-[#f4d06f] text-[#f4d06f]" />
+                <Star className="w-3.5 h-3.5 fill-white text-white" />
                 <span className="text-xs text-[#8b93a7]">
                   {Number(product.rating).toFixed(1)}
                 </span>
@@ -192,7 +192,7 @@ export default function Reports() {
         <p className="text-[#8b93a7]">Failed to load reports.</p>
         <button
           onClick={fetchStats}
-          className="mt-3 text-sm font-medium text-[#7dd3fc] hover:text-white"
+          className="mt-3 text-sm font-medium text-white hover:text-zinc-300"
         >
           Retry
         </button>
@@ -207,7 +207,7 @@ export default function Reports() {
         <StatCard
           label="Total Products"
           value={stats.totalProducts.toString()}
-          icon={<Package className="w-5 h-5 text-[#7dd3fc]" />}
+          icon={<Package className="w-5 h-5 text-white" />}
           color="bg-[#0f141c]"
           subtext={`${stats.categoryCounts.length} categories`}
         />
@@ -224,7 +224,7 @@ export default function Reports() {
         <StatCard
           label="Average Rating"
           value={stats.avgRating.toFixed(1)}
-          icon={<Star className="w-5 h-5 text-[#f4d06f]" />}
+          icon={<Star className="w-5 h-5 text-white" />}
           color="bg-[#0f141c]"
           subtext="Across all rated products"
         />

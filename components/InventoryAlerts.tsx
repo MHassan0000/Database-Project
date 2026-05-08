@@ -59,7 +59,7 @@ function AlertList({
               </p>
               <button
                 onClick={() => onAdjustStock(product)}
-                className="text-xs font-semibold text-[#7dd3fc] hover:text-white transition-colors"
+                className="text-xs font-semibold text-white hover:text-zinc-300 transition-colors"
               >
                 Adjust
               </button>

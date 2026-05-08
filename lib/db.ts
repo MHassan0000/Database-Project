@@ -8,7 +8,7 @@ const pool = new Pool({
   port: parseInt(process.env.PG_PORT || "5432"),
 });
 
-export async function query(text: string, params?: (string | number | null | boolean | undefined)[]) {
+export async function query(text: string, params?: (string | number | null | boolean | undefined | number[] | string[])[]) {
   const client = await pool.connect();
   try {
     const result = await client.query(text, params);

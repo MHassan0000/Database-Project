@@ -18,9 +18,6 @@ import InventoryAlerts from "@/components/InventoryAlerts";
 import AdvancedCharts from "@/components/AdvancedCharts";
 import QuickActions from "@/components/QuickActions";
 import InsightsPanel from "@/components/InsightsPanel";
-import AutomationCenter from "@/components/AutomationCenter";
-import SecurityCenter from "@/components/SecurityCenter";
-import SettingsCenter from "@/components/SettingsCenter";
 import { Database } from "lucide-react";
 
 function Dashboard() {
@@ -259,27 +256,27 @@ function Dashboard() {
               {/* Header */}
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#7dd3fc] border border-[#1c2333]">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
                     Live Inventory
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse-soft" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse-soft" />
                   </div>
-                  <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+                  <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
                     Product Control Center
                   </h2>
-                  <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+                  <p className="text-sm sm:text-base text-muted max-w-2xl">
                     Maintain a premium catalog, monitor inventory health, and keep every SKU ready for launch.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                   <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl ambient-inset">
-                    <div className="text-xs uppercase text-[color:var(--muted)] tracking-wider">Total SKUs</div>
+                    <div className="text-xs uppercase text-[#a1a1aa] tracking-wider">Total SKUs</div>
                     <div className="text-lg font-semibold text-white">{data.total}</div>
                   </div>
                   {data.total === 0 && !loading && (
                     <button
                       onClick={handleSeed}
                       disabled={seeding}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/5 text-white border border-[#3f3f46] hover:bg-white/10 transition-all disabled:opacity-50"
                     >
                       {seeding ? (
                         <>
@@ -380,14 +377,14 @@ function Dashboard() {
         {activeTab === "reports" && (
           <div className="space-y-8 animate-fade-in">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#f4d06f] border border-[#1c2333]">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
                 Insights
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f4d06f]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
                 Performance Briefing
               </h2>
-              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+              <p className="text-sm sm:text-base text-muted max-w-2xl">
                 Track revenue impact, category mix, and inventory risk signals in real time.
               </p>
             </div>
@@ -398,14 +395,14 @@ function Dashboard() {
         {activeTab === "catalog" && (
           <div className="space-y-8 animate-fade-in">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#7dd3fc] border border-[#1c2333]">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
                 Catalog
-                <span className="w-1.5 h-1.5 rounded-full bg-[#7dd3fc]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
                 Product Catalog
               </h2>
-              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+              <p className="text-sm sm:text-base text-muted max-w-2xl">
                 Curate and manage the full product lifecycle from draft to archive.
               </p>
             </div>
@@ -471,14 +468,14 @@ function Dashboard() {
         {activeTab === "inventory" && (
           <div className="space-y-8 animate-fade-in">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#f4d06f] border border-[#1c2333]">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
                 Inventory
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f4d06f]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
                 Stock Command
               </h2>
-              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+              <p className="text-sm sm:text-base text-muted max-w-2xl">
                 Monitor adjustments, alert queues, and replenishment priorities.
               </p>
             </div>
@@ -495,14 +492,14 @@ function Dashboard() {
         {activeTab === "projects" && (
           <div className="space-y-8 animate-fade-in">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#a78bfa] border border-[#1c2333]">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
                 Workflows
-                <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
+              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
                 Automation Studio
               </h2>
-              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
+              <p className="text-sm sm:text-base text-muted max-w-2xl">
                 Design and monitor operational flows across catalog, stock, and channels.
               </p>
             </div>
@@ -511,67 +508,14 @@ function Dashboard() {
           </div>
         )}
 
-        {activeTab === "automation" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#7dd3fc] border border-[#1c2333]">
-                Automation
-                <span className="w-1.5 h-1.5 rounded-full bg-[#7dd3fc]" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
-                Flow Builder
-              </h2>
-              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
-                Orchestrate triggers, alerts, and smart routing across your catalog.
-              </p>
-            </div>
-            <AutomationCenter />
-          </div>
-        )}
-
-        {activeTab === "security" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#34d399] border border-[#1c2333]">
-                Security
-                <span className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
-                Trust Center
-              </h2>
-              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
-                Audit trail, permissions, and access governance in one place.
-              </p>
-            </div>
-            <SecurityCenter />
-          </div>
-        )}
-
-        {activeTab === "settings" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#121723] text-[#f4d06f] border border-[#1c2333]">
-                Settings
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f4d06f]" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-semibold text-gradient font-[var(--font-display)]">
-                Workspace Config
-              </h2>
-              <p className="text-sm sm:text-base text-[color:var(--muted)] max-w-2xl">
-                Tune exports, notifications, and channel sync preferences.
-              </p>
-            </div>
-            <SettingsCenter />
-          </div>
-        )}
         </main>
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-[#1c2233] py-5">
+      <footer className="border-t border-[#27272a] py-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-[#667085] text-center">
-            ProductVault © {new Date().getFullYear()} - Ambient Ops Edition
+          <p className="text-xs text-[#71717a] text-center">
+            Obsidian © {new Date().getFullYear()} — Inventory Suite
           </p>
         </div>
       </footer>

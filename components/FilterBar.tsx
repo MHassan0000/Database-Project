@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface FilterBarProps {
   search: string;
@@ -119,8 +120,8 @@ export default function FilterBar({
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium border transition-all ${
               showFilters || hasActiveFilters
-                ? "bg-[#1a2231] border-[#2a344a] text-[#7dd3fc]"
-                : "bg-[#0f141c] border-[#1c2333] text-[#8b93a7] hover:border-[#2a344a]"
+                ? "bg-[#27272a] border-[#3f3f46] text-white"
+                : "bg-[#111113] border-[#27272a] text-[#a1a1aa] hover:border-[#3f3f46]"
             }`}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -128,7 +129,7 @@ export default function FilterBar({
             </svg>
             Filters
             {hasActiveFilters && (
-              <span className="w-2 h-2 rounded-full bg-[#7dd3fc]" />
+              <span className="w-2 h-2 rounded-full bg-white" />
             )}
           </button>
 
@@ -155,7 +156,7 @@ export default function FilterBar({
           </a>
           <button
             onClick={onAddProduct}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-[#0b0f17] bg-linear-to-r from-[#f4d06f] to-[#7dd3fc] hover:from-[#f6e089] hover:to-[#9be0ff] shadow-lg shadow-black/30 transition-all"
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 shadow-lg shadow-black/30 transition-all"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -279,7 +280,7 @@ export default function FilterBar({
                   className="px-2.5 py-2 rounded-xl border border-[#1c2333] hover:bg-[#141a26] transition-colors text-white"
                   title={sortOrder === "asc" ? "Ascending" : "Descending"}
                 >
-                  {sortOrder === "asc" ? "↑" : "↓"}
+                  {sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -293,7 +294,7 @@ export default function FilterBar({
               </p>
               <button
                 onClick={onClearFilters}
-                className="text-xs font-medium text-[#7dd3fc] hover:text-white transition-colors"
+                className="text-xs font-medium text-white hover:text-zinc-300 transition-colors"
               >
                 Clear all filters
               </button>

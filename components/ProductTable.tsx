@@ -33,13 +33,13 @@ function StarRating({ rating }: { rating: number }) {
 
   for (let i = 0; i < 5; i++) {
     if (i < fullStars) {
-      stars.push(<Star key={i} className="w-3.5 h-3.5 fill-[#f4d06f] text-[#f4d06f]" />);
+      stars.push(<Star key={i} className="w-3.5 h-3.5 fill-white text-white" />);
     } else if (i === fullStars && hasHalf) {
       stars.push(
         <div key={i} className="relative">
           <Star className="w-3.5 h-3.5 text-[#2a3040]" />
           <div className="absolute inset-0 overflow-hidden w-[50%]">
-            <Star className="w-3.5 h-3.5 fill-[#f4d06f] text-[#f4d06f]" />
+            <Star className="w-3.5 h-3.5 fill-white text-white" />
           </div>
         </div>
       );
@@ -182,7 +182,7 @@ export default function ProductTable({
                     type="checkbox"
                     checked={products.length > 0 && selected.length === products.length}
                     onChange={(e) => toggleAll(e.target.checked)}
-                    className="accent-[#7dd3fc]"
+                    className="accent-white"
                   />
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">Product</th>
@@ -234,7 +234,7 @@ export default function ProductTable({
                   type="checkbox"
                   checked={products.length > 0 && selected.length === products.length}
                   onChange={(e) => toggleAll(e.target.checked)}
-                  className="accent-[#7dd3fc]"
+                  className="accent-white"
                 />
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">
@@ -272,14 +272,14 @@ export default function ProductTable({
                     type="checkbox"
                     checked={selected.includes(product.id)}
                     onChange={() => toggleOne(product.id)}
-                    className="accent-[#7dd3fc]"
+                    className="accent-white"
                   />
                 </td>
 
                 {/* Product */}
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#131a26] to-[#1b2333] flex items-center justify-center text-[#7dd3fc] shrink-0 overflow-hidden border border-[#1c2333]">
+                    <div className="w-10 h-10 rounded-xl bg-[#18181b] flex items-center justify-center text-white shrink-0 overflow-hidden border border-[#27272a]">
                       {product.image_url ? (
                         <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                       ) : (
@@ -347,7 +347,7 @@ export default function ProductTable({
                     )}
                     <button
                       onClick={() => onEdit(product)}
-                      className="p-2 rounded-lg hover:bg-[#1a2231] text-[#8b93a7] hover:text-[#7dd3fc] transition-all"
+                      className="p-2 rounded-lg hover:bg-[#27272a] text-[#a1a1aa] hover:text-white transition-all"
                       title="Edit"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

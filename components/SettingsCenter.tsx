@@ -8,7 +8,7 @@ export default function SettingsCenter() {
   const [autoExport, setAutoExport] = useState(false);
 
   const toggle = (value: boolean) =>
-    value ? "bg-[#7dd3fc]" : "bg-[#1c2333]";
+    value ? "bg-white" : "bg-[#27272a]";
 
   return (
     <div className="space-y-6">
@@ -75,7 +75,7 @@ export default function SettingsCenter() {
         <h3 className="text-sm font-semibold text-white">Export Controls</h3>
         <p className="text-xs text-[#8b93a7]">Manage snapshots and backup cadence</p>
         <div className="flex flex-wrap gap-3 mt-4">
-          <button className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#0b0f17] bg-linear-to-r from-[#f4d06f] to-[#7dd3fc]">
+          <button className="px-4 py-2.5 rounded-xl text-xs font-semibold text-black bg-white hover:bg-zinc-200 transition-colors">
             Run export now
           </button>
           <button className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white border border-[#1c2333] bg-[#0f141c] hover:bg-[#141a26]">

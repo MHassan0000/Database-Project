@@ -9,7 +9,7 @@ export default function SecurityCenter() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="ambient-card rounded-3xl p-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#0f141c] border border-[#1c2333] flex items-center justify-center text-[#34d399]">
+            <div className="w-10 h-10 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center text-white">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
@@ -21,7 +21,7 @@ export default function SecurityCenter() {
         </div>
         <div className="ambient-card rounded-3xl p-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#0f141c] border border-[#1c2333] flex items-center justify-center text-[#7dd3fc]">
+            <div className="w-10 h-10 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center text-white">
               <Users className="w-5 h-5" />
             </div>
             <div>
@@ -33,7 +33,7 @@ export default function SecurityCenter() {
         </div>
         <div className="ambient-card rounded-3xl p-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#0f141c] border border-[#1c2333] flex items-center justify-center text-[#f4d06f]">
+            <div className="w-10 h-10 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center text-white">
               <KeyRound className="w-5 h-5" />
             </div>
             <div>

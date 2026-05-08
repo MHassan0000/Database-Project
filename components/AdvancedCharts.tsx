@@ -94,8 +94,8 @@ export default function AdvancedCharts({ products }: AdvancedChartsProps) {
             <AreaChart data={trendData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="trend" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#7dd3fc" stopOpacity={0.55} />
-                  <stop offset="100%" stopColor="#7dd3fc" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="label" stroke="#4b5563" tick={{ fontSize: 10 }} axisLine={false} />
@@ -111,7 +111,7 @@ export default function AdvancedCharts({ products }: AdvancedChartsProps) {
               <Area
                 type="monotone"
                 dataKey="count"
-                stroke="#7dd3fc"
+                stroke="#ffffff"
                 strokeWidth={2}
                 fill="url(#trend)"
               />
@@ -137,7 +137,7 @@ export default function AdvancedCharts({ products }: AdvancedChartsProps) {
               </div>
               <div className="w-full h-2 bg-[#101624] rounded-full">
                 <div
-                  className="h-2 rounded-full bg-linear-to-r from-[#f4d06f] via-[#7dd3fc] to-[#a78bfa]"
+                  className="h-2 rounded-full bg-linear-to-r from-white to-[#52525b]"
                   style={{
                     width: `${products.length ? (bucket.count / products.length) * 100 : 0}%`,
                   }}

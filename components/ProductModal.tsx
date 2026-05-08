@@ -335,7 +335,7 @@ export default function ProductModal({
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 rounded-xl text-sm font-semibold text-[#0b0f17] bg-linear-to-r from-[#f4d06f] to-[#7dd3fc] hover:from-[#f6e089] hover:to-[#9be0ff] transition-all shadow-lg shadow-black/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-2.5 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 transition-all shadow-lg shadow-black/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <>

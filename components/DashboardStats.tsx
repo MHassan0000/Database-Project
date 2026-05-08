@@ -25,7 +25,7 @@ function StatCard({
           <p className="text-2xl font-semibold text-white mt-1">{value}</p>
           <p className="text-xs text-[#8b93a7] mt-1">{subtext}</p>
         </div>
-        <div className="w-10 h-10 rounded-xl bg-[#0f141c] flex items-center justify-center border border-white/5 text-[#7dd3fc]">
+        <div className="w-10 h-10 rounded-xl bg-[#18181b] flex items-center justify-center border border-[#27272a] text-white">
           {icon}
         </div>
       </div>
@@ -112,13 +112,13 @@ export default function DashboardStats() {
         label="Active SKUs"
         value={(statusMap.active ?? 0).toString()}
         subtext={`Draft ${statusMap.draft ?? 0} | Archived ${statusMap.archived ?? 0}`}
-        icon={<Layers className="w-5 h-5 text-[#7dd3fc]" />}
+        icon={<Layers className="w-5 h-5 text-white" />}
       />
       <StatCard
         label="Price Range"
         value={`$${minPrice} - $${maxPrice}`}
         subtext={`Avg rating ${stats.avgRating.toFixed(1)}`}
-        icon={<Star className="w-5 h-5 text-[#f4d06f]" />}
+        icon={<Star className="w-5 h-5 text-white" />}
       />
     </div>
   );

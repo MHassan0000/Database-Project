@@ -40,7 +40,7 @@ export default function BulkActions({
           <button
             onClick={() => onApplyStatus(status)}
             disabled={loading}
-            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#0b0f17] bg-linear-to-r from-[#f4d06f] to-[#7dd3fc] hover:from-[#f6e089] hover:to-[#9be0ff] transition-all shadow-lg shadow-black/30 disabled:opacity-50"
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 transition-all shadow-lg shadow-black/30 disabled:opacity-50"
           >
             Apply
           </button>
