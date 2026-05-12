@@ -4,7 +4,7 @@ const pool = new Pool({
   user: process.env.PG_USER || "postgres",
   host: process.env.PG_HOST || "localhost",
   database: process.env.PG_DATABASE || "product_db",
-  password: process.env.PG_PASSWORD || "postgres",
+  password: process.env.PG_PASSWORD || "Ilvn1304@",
   port: parseInt(process.env.PG_PORT || "5432"),
 });
 
@@ -32,8 +32,10 @@ export async function withTransaction<T>(handler: (client: PoolClient) => Promis
     client.release();
   }
 }
-
+let initialized = false;
 export async function initializeDatabase() {
+  if (initialized) return;  // ← ADD THIS LINE
+  initialized = true;  
   const createTableQuery = `
     CREATE TABLE IF NOT EXISTS products (
       id SERIAL PRIMARY KEY,
