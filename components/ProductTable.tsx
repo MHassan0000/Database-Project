@@ -15,6 +15,7 @@ import {
   Sparkles,
   CarFront,
   Package,
+  Truck,
 } from "lucide-react";
 
 interface ProductTableProps {
@@ -137,6 +138,8 @@ function SkeletonRow() {
       <td className="px-4 py-4 hidden md:table-cell"><div className="w-20 h-6 skeleton rounded-lg" /></td>
       <td className="px-4 py-4 hidden lg:table-cell"><div className="w-16 h-4 skeleton" /></td>
       <td className="px-4 py-4 hidden lg:table-cell"><div className="w-16 h-6 skeleton rounded-lg" /></td>
+      {/* Phase 2: supplier skeleton cell */}
+      <td className="px-4 py-4 hidden xl:table-cell"><div className="w-24 h-4 skeleton rounded" /></td>
       <td className="px-4 py-4"><div className="w-20 h-8 skeleton rounded-lg" /></td>
     </tr>
   );
@@ -191,6 +194,8 @@ export default function ProductTable({
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden md:table-cell">Stock</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">Rating</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">Status</th>
+                {/* Phase 2: supplier column header in skeleton */}
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden xl:table-cell">Supplier</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -255,9 +260,11 @@ export default function ProductTable({
               <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">
                 Status
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">
-                Actions
+              {/* Phase 2: Primary supplier column */}
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden xl:table-cell">
+                Supplier
               </th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="stagger-children">
@@ -328,6 +335,18 @@ export default function ProductTable({
                 {/* Status */}
                 <td className="px-4 py-3.5 hidden lg:table-cell">
                   <StatusBadge status={product.status || "active"} />
+                </td>
+
+                {/* Phase 2: Primary Supplier */}
+                <td className="px-4 py-3.5 hidden xl:table-cell">
+                  {(product as Product & { primary_supplier_name?: string }).primary_supplier_name ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[#a1a1aa]">
+                      <Truck className="w-3 h-3 text-[#71717a]" />
+                      {(product as Product & { primary_supplier_name?: string }).primary_supplier_name}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[#52525b]">—</span>
+                  )}
                 </td>
 
                 {/* Actions */}

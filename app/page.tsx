@@ -18,6 +18,11 @@ import InventoryAlerts from "@/components/InventoryAlerts";
 import AdvancedCharts from "@/components/AdvancedCharts";
 import QuickActions from "@/components/QuickActions";
 import InsightsPanel from "@/components/InsightsPanel";
+// Phase 2: Supplier management components
+import SupplierTable from "@/components/SupplierTable";
+import SupplierModal from "@/components/SupplierModal";
+import SupplierDetail from "@/components/SupplierDetail";
+import SupplierStats from "@/components/SupplierStats";
 import { Database } from "lucide-react";
 
 function Dashboard() {
@@ -60,6 +65,19 @@ function Dashboard() {
   // Delete state
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Phase 2: Supplier state
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<import("@/lib/types").Supplier | null>(null);
+  const [supplierModalLoading, setSupplierModalLoading] = useState(false);
+  const [supplierDetailId, setSupplierDetailId] = useState<number | null>(null);
+  const [supplierRefreshKey, setSupplierRefreshKey] = useState(0);
+  // Holds pending supplier link data after product save
+  const [pendingSupplierLink, setPendingSupplierLink] = useState<{
+    supplierId: number;
+    costPrice: number;
+    leadDays: number;
+  } | null>(null);
 
   // Debounced search
   const [searchDebounce, setSearchDebounce] = useState("");
@@ -145,6 +163,28 @@ function Dashboard() {
         throw new Error(err.error || "Failed to save product");
       }
 
+      const savedProduct = await res.json();
+
+      // Phase 2: link supplier if one was selected in ProductModal
+      if (pendingSupplierLink && savedProduct.id) {
+        try {
+          await fetch(`/api/suppliers/${pendingSupplierLink.supplierId}/products`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              product_id: savedProduct.id,
+              cost_price: pendingSupplierLink.costPrice,
+              lead_days: pendingSupplierLink.leadDays,
+              is_primary: true,
+            }),
+          });
+        } catch {
+          // Non-fatal: product was saved, supplier link silently failed
+          showToast("Product saved but supplier link failed", "error");
+        }
+        setPendingSupplierLink(null);
+      }
+
       showToast(
         editingProduct
           ? "Product updated successfully!"
@@ -194,6 +234,51 @@ function Dashboard() {
     setSortBy("created_at");
     setSortOrder("desc");
     setPage(1);
+  };
+
+  // Phase 2: Supplier CRUD handlers
+  const handleSupplierSubmit = async (formData: import("@/lib/types").SupplierFormData) => {
+    setSupplierModalLoading(true);
+    try {
+      const url = editingSupplier ? `/api/suppliers/${editingSupplier.id}` : "/api/suppliers";
+      const method = editingSupplier ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save supplier");
+      }
+      showToast(
+        editingSupplier ? "Supplier updated!" : "Supplier created!",
+        "success"
+      );
+      setSupplierModalOpen(false);
+      setEditingSupplier(null);
+      setSupplierRefreshKey((k) => k + 1);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Something went wrong", "error");
+    } finally {
+      setSupplierModalLoading(false);
+    }
+  };
+
+  const handleSupplierDelete = async (supplier: import("@/lib/types").Supplier) => {
+    if (!confirm(`Delete supplier "${supplier.name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/suppliers/${supplier.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to delete supplier");
+      }
+      showToast("Supplier deleted", "success");
+      setSupplierRefreshKey((k) => k + 1);
+      if (supplierDetailId === supplier.id) setSupplierDetailId(null);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Delete failed", "error");
+    }
   };
 
   const applyBulkStatus = async (nextStatus: string) => {
@@ -489,6 +574,60 @@ function Dashboard() {
           </div>
         )}
 
+        {/* Phase 2: Suppliers tab */}
+        {activeTab === "suppliers" && (
+          <div className="space-y-8 animate-fade-in">
+            {supplierDetailId ? (
+              /* Detail view when a supplier row is clicked */
+              <SupplierDetail
+                supplierId={supplierDetailId}
+                onEdit={(s) => {
+                  setEditingSupplier(s);
+                  setSupplierModalOpen(true);
+                }}
+                onBack={() => setSupplierDetailId(null)}
+                onUnlinkProduct={() => setSupplierRefreshKey((k) => k + 1)}
+              />
+            ) : (
+              <>
+                {/* Header */}
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
+                      Supplier Network
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse-soft" />
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
+                      Supplier Management
+                    </h2>
+                    <p className="text-sm sm:text-base text-muted max-w-2xl">
+                      Manage your supplier network, track lead times, and link products to vendors.
+                    </p>
+                  </div>
+                </div>
+
+                {/* KPI stats */}
+                <SupplierStats />
+
+                {/* Paginated supplier table */}
+                <SupplierTable
+                  refreshKey={supplierRefreshKey}
+                  onAdd={() => {
+                    setEditingSupplier(null);
+                    setSupplierModalOpen(true);
+                  }}
+                  onEdit={(s) => {
+                    setEditingSupplier(s);
+                    setSupplierModalOpen(true);
+                  }}
+                  onDelete={handleSupplierDelete}
+                  onView={(s) => setSupplierDetailId(s.id)}
+                />
+              </>
+            )}
+          </div>
+        )}
+
         {activeTab === "projects" && (
           <div className="space-y-8 animate-fade-in">
             <div className="space-y-2">
@@ -526,10 +665,15 @@ function Dashboard() {
         onClose={() => {
           setModalOpen(false);
           setEditingProduct(null);
+          setPendingSupplierLink(null);
         }}
         onSubmit={handleSubmit}
         product={editingProduct}
         loading={modalLoading}
+        // Phase 2: store supplier selection so handleSubmit can link after save
+        onSupplierLink={(productId, supplierId, costPrice, leadDays) => {
+          setPendingSupplierLink({ supplierId, costPrice, leadDays });
+        }}
       />
 
       <StockAdjustModal
@@ -548,6 +692,18 @@ function Dashboard() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteProduct(null)}
         loading={deleteLoading}
+      />
+
+      {/* Phase 2: Supplier create/edit modal */}
+      <SupplierModal
+        isOpen={supplierModalOpen}
+        onClose={() => {
+          setSupplierModalOpen(false);
+          setEditingSupplier(null);
+        }}
+        onSubmit={handleSupplierSubmit}
+        supplier={editingSupplier}
+        loading={supplierModalLoading}
       />
     </div>
   );
