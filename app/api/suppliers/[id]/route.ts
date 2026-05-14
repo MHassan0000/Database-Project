@@ -2,10 +2,13 @@
 // GET    /api/suppliers/[id] — get single supplier with linked products
 // PUT    /api/suppliers/[id] — update supplier
 // DELETE /api/suppliers/[id] — delete supplier (blocked if active POs exist)
+// Phase 3: logAudit integrated into PUT and DELETE
 
 import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
 import { SupplierFormData } from "@/lib/types";
+// Phase 3: audit logging
+import { logAudit } from "@/lib/audit";
 
 // ── GET /api/suppliers/[id] ───────────────────────────────────────────────────
 export async function GET(
@@ -136,7 +139,23 @@ export async function PUT(
       ]
     );
 
-    return NextResponse.json(result.rows[0]);
+    const updated = result.rows[0];
+
+    // Phase 3: log supplier update
+    await logAudit({
+      action: "update",
+      entityType: "supplier",
+      entityId: updated.id,
+      entityName: updated.name,
+      details: {
+        status: updated.status,
+        rating: updated.rating,
+        email: updated.email,
+      },
+      performedBy: "system",
+    });
+
+    return NextResponse.json(updated);
   } catch (error) {
     console.error("PUT /api/suppliers/[id] error:", error);
     return NextResponse.json(
@@ -191,7 +210,22 @@ export async function DELETE(
       [supplierId]
     );
 
-    return NextResponse.json({ deleted: deleted.rows[0] });
+    const deletedSupplier = deleted.rows[0];
+
+    // Phase 3: log supplier deletion
+    await logAudit({
+      action: "delete",
+      entityType: "supplier",
+      entityId: deletedSupplier.id,
+      entityName: deletedSupplier.name,
+      details: {
+        email: deletedSupplier.email,
+        status: deletedSupplier.status,
+      },
+      performedBy: "system",
+    });
+
+    return NextResponse.json({ deleted: deletedSupplier });
   } catch (error) {
     console.error("DELETE /api/suppliers/[id] error:", error);
     return NextResponse.json(

@@ -23,7 +23,10 @@ import SupplierTable from "@/components/SupplierTable";
 import SupplierModal from "@/components/SupplierModal";
 import SupplierDetail from "@/components/SupplierDetail";
 import SupplierStats from "@/components/SupplierStats";
-import { Database } from "lucide-react";
+// Phase 3: Audit trail components
+import ActivityFeed from "@/components/ActivityFeed";
+import AuditLog from "@/components/AuditLog";
+import { Database, ClipboardList } from "lucide-react";
 
 function Dashboard() {
   const { showToast } = useToast();
@@ -392,6 +395,9 @@ function Dashboard() {
 
             <InsightsPanel products={data.products} />
 
+            {/* Phase 3: Activity feed on dashboard Overview */}
+            <ActivityFeed />
+
             <QuickActions />
 
             <BulkActions
@@ -644,6 +650,28 @@ function Dashboard() {
             </div>
             <QuickActions />
             <InsightsPanel products={data.products} />
+          </div>
+        )}
+
+        {/* Phase 3: Audit Log tab */}
+        {activeTab === "audit" && (
+          <div className="space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
+                Audit Trail
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
+                Activity Log
+              </h2>
+              <p className="text-sm sm:text-base text-muted max-w-2xl">
+                Complete history of all create, update, delete, and stock adjustment operations.
+              </p>
+            </div>
+
+            {/* Full audit table */}
+            <AuditLog />
           </div>
         )}
 

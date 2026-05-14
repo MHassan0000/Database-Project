@@ -1,5 +1,7 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// Phase 3: audit logging
+import { logAudit } from "@/lib/audit";
 
 // GET /api/products - fetch all products with optional filters, search, sort, pagination
 export async function GET(request: NextRequest) {
@@ -157,6 +159,22 @@ export async function POST(request: NextRequest) {
         status || "active",
       ]
     );
+
+    // Phase 3: log product creation to audit trail
+    await logAudit({
+      action: "create",
+      entityType: "product",
+      entityId: result.rows[0].id,
+      entityName: result.rows[0].name,
+      details: {
+        sku: result.rows[0].sku,
+        price: result.rows[0].price,
+        stock: result.rows[0].stock,
+        category: result.rows[0].category,
+        status: result.rows[0].status,
+      },
+      performedBy: "system",
+    });
 
     return Response.json(result.rows[0], { status: 201 });
   } catch (error) {

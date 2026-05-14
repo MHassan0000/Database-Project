@@ -1,5 +1,7 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// Phase 3: audit logging
+import { logAudit } from "@/lib/audit";
 
 // PATCH /api/products/bulk - update status for multiple products
 export async function PATCH(request: NextRequest) {
@@ -20,6 +22,14 @@ export async function PATCH(request: NextRequest) {
       "UPDATE products SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = ANY($2::int[])",
       [status, ids]
     );
+
+    // Phase 3: log bulk status update
+    await logAudit({
+      action: "bulk_update",
+      entityType: "product",
+      details: { ids, status, count: result.rowCount },
+      performedBy: "system",
+    });
 
     return Response.json({ updated: result.rowCount });
   } catch (error) {
@@ -46,6 +56,14 @@ export async function DELETE(request: NextRequest) {
       "DELETE FROM products WHERE id = ANY($1::int[])",
       [ids]
     );
+
+    // Phase 3: log bulk deletion
+    await logAudit({
+      action: "bulk_delete",
+      entityType: "product",
+      details: { ids, count: result.rowCount },
+      performedBy: "system",
+    });
 
     return Response.json({ deleted: result.rowCount });
   } catch (error) {

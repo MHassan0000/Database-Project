@@ -1,11 +1,14 @@
 // Phase 2 — app/api/suppliers/route.ts
 // GET  /api/suppliers  — paginated list with search, sort, filter
 // POST /api/suppliers  — create a new supplier
+// Phase 3: logAudit integrated into POST
 
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { initializeDatabase } from "@/lib/db";
 import { SupplierFormData } from "@/lib/types";
+// Phase 3: audit logging
+import { logAudit } from "@/lib/audit";
 
 // ── GET /api/suppliers ────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
@@ -133,7 +136,23 @@ export async function POST(request: NextRequest) {
       ]
     );
 
-    return NextResponse.json(result.rows[0], { status: 201 });
+    const newSupplier = result.rows[0];
+
+    // Phase 3: log supplier creation
+    await logAudit({
+      action: "create",
+      entityType: "supplier",
+      entityId: newSupplier.id,
+      entityName: newSupplier.name,
+      details: {
+        email: newSupplier.email,
+        status: newSupplier.status,
+        rating: newSupplier.rating,
+      },
+      performedBy: "system",
+    });
+
+    return NextResponse.json(newSupplier, { status: 201 });
   } catch (error) {
     console.error("POST /api/suppliers error:", error);
     return NextResponse.json(

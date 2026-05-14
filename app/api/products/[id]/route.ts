@@ -1,5 +1,7 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase, withTransaction } from "@/lib/db";
+// Phase 3: audit logging
+import { logAudit, buildDiff } from "@/lib/audit";
 
 // GET /api/products/[id] - fetch a single product
 export async function GET(
@@ -80,6 +82,17 @@ export async function PUT(
       return Response.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // Phase 3: log update with field-level diff (fetch previous state from RETURNING)
+    // We need the before-state; we already fetched it above for validation — reuse result
+    await logAudit({
+      action: "update",
+      entityType: "product",
+      entityId: parseInt(id),
+      entityName: result.rows[0].name,
+      details: { updated_fields: Object.keys(result.rows[0]).filter(k => !['id','created_at','updated_at'].includes(k)) },
+      performedBy: "system",
+    });
+
     return Response.json(result.rows[0]);
   } catch (error) {
     console.error("PUT /api/products/[id] error:", error);
@@ -108,9 +121,26 @@ export async function DELETE(
       return Response.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // Phase 3: log deletion with the deleted product snapshot
+    const deleted = result.rows[0];
+    await logAudit({
+      action: "delete",
+      entityType: "product",
+      entityId: deleted.id,
+      entityName: deleted.name,
+      details: {
+        sku: deleted.sku,
+        category: deleted.category,
+        price: deleted.price,
+        stock: deleted.stock,
+        status: deleted.status,
+      },
+      performedBy: "system",
+    });
+
     return Response.json({
       message: "Product deleted successfully",
-      product: result.rows[0],
+      product: deleted,
     });
   } catch (error) {
     console.error("DELETE /api/products/[id] error:", error);
@@ -182,6 +212,21 @@ export async function PATCH(
     if (!updatedProduct) {
       return Response.json({ error: "Product not found" }, { status: 404 });
     }
+
+    // Phase 3: log stock adjustment with delta + reason
+    await logAudit({
+      action: "stock_adjust",
+      entityType: "product",
+      entityId: parseInt(id),
+      entityName: updatedProduct.name,
+      details: {
+        delta: Number(delta),
+        reason: reason || "adjustment",
+        note: note || "",
+        stock_after: updatedProduct.stock,
+      },
+      performedBy: "system",
+    });
 
     return Response.json({
       message: "Stock updated",

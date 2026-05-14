@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import {
   LayoutDashboard, Package, LineChart, Boxes, FolderKanban,
-  ChevronLeft, ChevronRight, Truck,
+  ChevronLeft, ChevronRight, Truck, ClipboardList,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -20,6 +20,8 @@ const navItems = [
   { id: "suppliers", label: "Suppliers",  icon: Truck },
   { id: "reports",   label: "Reports",    icon: LineChart },
   { id: "projects",  label: "Workflows",  icon: FolderKanban },
+  // Phase 3: Audit trail nav item
+  { id: "audit",     label: "Audit Log",  icon: ClipboardList },
 ];
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
