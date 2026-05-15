@@ -32,6 +32,9 @@ import PurchaseOrderList from "@/components/PurchaseOrderList";
 import PurchaseOrderModal from "@/components/PurchaseOrderModal";
 import PurchaseOrderDetail from "@/components/PurchaseOrderDetail";
 import ReorderSuggestions from "@/components/ReorderSuggestions";
+// PHASE 5 IMPLEMENTATION START
+import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
+// PHASE 5 IMPLEMENTATION END
 import { Database, ClipboardList, ShoppingCart } from "lucide-react";
 
 function Dashboard() {
@@ -543,23 +546,26 @@ function Dashboard() {
           </div>
         )}
 
+        {/* PHASE 5 IMPLEMENTATION START: Advanced Analytics replaces old Reports in this tab */}
         {activeTab === "reports" && (
           <div className="space-y-8 animate-fade-in">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                Insights
+                Analytics
                 <span className="w-1.5 h-1.5 rounded-full bg-white" />
               </div>
               <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                Performance Briefing
+                Advanced Analytics
               </h2>
               <p className="text-sm sm:text-base text-muted max-w-2xl">
-                Track revenue impact, category mix, and inventory risk signals in real time.
+                Stock movement trends, inventory value history, velocity rankings, and category performance.
               </p>
             </div>
-            <Reports />
+            {/* Phase 5: AnalyticsDashboard — trend, value, category, velocity charts */}
+            <AnalyticsDashboard />
           </div>
         )}
+        {/* PHASE 5 IMPLEMENTATION END */}
 
         {activeTab === "catalog" && (
           <div className="space-y-8 animate-fade-in">

@@ -20,7 +20,8 @@ const navItems = [
   { id: "suppliers", label: "Suppliers",  icon: Truck },
   // Phase 4: Purchase Orders nav item
   { id: "orders",    label: "Orders",     icon: ShoppingCart },
-  { id: "reports",   label: "Reports",    icon: LineChart },
+  // Phase 5: Advanced Analytics (replaces "Reports" label)
+  { id: "reports",   label: "Analytics",  icon: LineChart },
   { id: "projects",  label: "Workflows",  icon: FolderKanban },
   // Phase 3: Audit trail nav item
   { id: "audit",     label: "Audit Log",  icon: ClipboardList },

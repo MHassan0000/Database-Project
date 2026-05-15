@@ -321,3 +321,91 @@ export interface PaginatedList<T> {
   limit: number;
   totalPages: number;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 5: Advanced Analytics types
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AnalyticsPeriod = "7d" | "14d" | "30d" | "60d" | "90d";
+
+/** One data-point returned by /api/analytics/trends */
+export interface TrendDataPoint {
+  date:      string; // ISO date "YYYY-MM-DD"
+  inbound:   number;
+  outbound:  number;
+  movements: number;
+}
+
+export interface TrendsResponse {
+  period:  AnalyticsPeriod;
+  groupBy: "day" | "week";
+  data:    TrendDataPoint[];
+}
+
+/** Top-mover row from /api/analytics/velocity */
+export interface VelocityItem {
+  id:            number;
+  name:          string;
+  sku:           string;
+  category:      string;
+  current_stock: number;
+  price:         number;
+  movements:     number;
+  inbound:       number;
+  outbound:      number;
+  total_units:   number;
+}
+
+/** Dead-stock item — no movement in period */
+export interface DeadStockItem {
+  id:            number;
+  name:          string;
+  sku:           string;
+  category:      string;
+  current_stock: number;
+  price:         number;
+}
+
+export interface VelocityResponse {
+  period:    AnalyticsPeriod;
+  limit:     number;
+  topMovers: VelocityItem[];
+  deadStock: DeadStockItem[];
+}
+
+/** One data-point from /api/analytics/value-history */
+export interface ValueHistoryPoint {
+  date:            string;
+  inventory_value: number;
+  products_active: number;
+}
+
+export interface ValueHistoryResponse {
+  period:       AnalyticsPeriod;
+  currentValue: number;
+  productCount: number;
+  data:         ValueHistoryPoint[];
+}
+
+/** One row from /api/analytics/category-performance */
+export interface CategoryPerformance {
+  category:      string;
+  product_count: number;
+  total_stock:   number;
+  total_value:   number;
+  avg_price:     number;
+  avg_rating:    number;
+  movements:     number;
+  inbound:       number;
+  outbound:      number;
+}
+
+export interface CategoryPerformanceResponse {
+  period:     AnalyticsPeriod;
+  categories: CategoryPerformance[];
+  totals: {
+    total_value:     number;
+    total_products:  number;
+    total_movements: number;
+  };
+}
