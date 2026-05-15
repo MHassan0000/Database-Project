@@ -26,7 +26,13 @@ import SupplierStats from "@/components/SupplierStats";
 // Phase 3: Audit trail components
 import ActivityFeed from "@/components/ActivityFeed";
 import AuditLog from "@/components/AuditLog";
-import { Database, ClipboardList } from "lucide-react";
+// Phase 4: Purchase Orders & Reorder components
+import POStats from "@/components/POStats";
+import PurchaseOrderList from "@/components/PurchaseOrderList";
+import PurchaseOrderModal from "@/components/PurchaseOrderModal";
+import PurchaseOrderDetail from "@/components/PurchaseOrderDetail";
+import ReorderSuggestions from "@/components/ReorderSuggestions";
+import { Database, ClipboardList, ShoppingCart } from "lucide-react";
 
 function Dashboard() {
   const { showToast } = useToast();
@@ -82,6 +88,20 @@ function Dashboard() {
     leadDays: number;
   } | null>(null);
 
+  // Phase 4: Purchase Order state
+  const [poModalOpen, setPOModalOpen]                   = useState(false);
+  const [editingPO, setEditingPO]                       = useState<import("@/lib/types").PurchaseOrder | null>(null);
+  const [poModalLoading, setPOModalLoading]             = useState(false);
+  const [poDetailId, setPODetailId]                     = useState<number | null>(null);
+  const [poRefreshKey, setPORefreshKey]                 = useState(0);
+  const [poModalPrefill, setPOModalPrefill]             = useState<{
+    supplier_id?: number;
+    product_id?: number;
+    product_name?: string;
+    quantity?: number;
+    unit_price?: number;
+  } | null>(null);
+
   // Debounced search
   const [searchDebounce, setSearchDebounce] = useState("");
 
@@ -89,6 +109,17 @@ function Dashboard() {
     const timer = setTimeout(() => setSearchDebounce(search), 350);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Listen for tab-switch events dispatched by child components (e.g. ActivityFeed "View full log")
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tab = (e as CustomEvent<string>).detail;
+      if (tab) setActiveTab(tab);
+    };
+    window.addEventListener("obsidian:tab", handler);
+    return () => window.removeEventListener("obsidian:tab", handler);
+  }, []);
+
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -279,6 +310,53 @@ function Dashboard() {
       showToast("Supplier deleted", "success");
       setSupplierRefreshKey((k) => k + 1);
       if (supplierDetailId === supplier.id) setSupplierDetailId(null);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Delete failed", "error");
+    }
+  };
+
+  // Phase 4: Purchase Order CRUD handlers
+  const handlePOSubmit = async (formData: import("@/lib/types").PurchaseOrderFormData) => {
+    setPOModalLoading(true);
+    try {
+      const url    = editingPO ? `/api/purchase-orders/${editingPO.id}` : "/api/purchase-orders";
+      const method = editingPO ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save purchase order");
+      }
+      const saved = await res.json();
+      showToast(
+        editingPO ? "Purchase order updated!" : `PO #${saved.id} created!`,
+        "success"
+      );
+      setPOModalOpen(false);
+      setEditingPO(null);
+      setPOModalPrefill(null);
+      setPORefreshKey((k) => k + 1);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Something went wrong", "error");
+    } finally {
+      setPOModalLoading(false);
+    }
+  };
+
+  const handlePODelete = async (po: import("@/lib/types").PurchaseOrder) => {
+    if (!confirm(`Delete draft PO #${po.id}? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/purchase-orders/${po.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to delete PO");
+      }
+      showToast(`PO #${po.id} deleted`, "success");
+      setPORefreshKey((k) => k + 1);
+      if (poDetailId === po.id) setPODetailId(null);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Delete failed", "error");
     }
@@ -653,6 +731,56 @@ function Dashboard() {
           </div>
         )}
 
+        {/* Phase 4: Orders tab */}
+        {activeTab === "orders" && (
+          <div className="space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
+                Procurement
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
+                Purchase Orders
+              </h2>
+              <p className="text-sm sm:text-base text-muted max-w-2xl">
+                Create and track purchase orders, receive stock from suppliers, and act on reorder recommendations.
+              </p>
+            </div>
+
+            {/* KPI cards */}
+            <POStats />
+
+            {/* PO list */}
+            <PurchaseOrderList
+              onView={(id) => setPODetailId(id)}
+              onCreate={() => {
+                setEditingPO(null);
+                setPOModalPrefill(null);
+                setPOModalOpen(true);
+              }}
+              onDelete={handlePODelete}
+              refreshKey={poRefreshKey}
+            />
+
+            {/* Reorder suggestions */}
+            <ReorderSuggestions
+              onCreatePO={(item) => {
+                setEditingPO(null);
+                setPOModalPrefill({
+                  supplier_id:  item.supplier_id  ?? undefined,
+                  product_id:   item.id,
+                  product_name: item.name,
+                  quantity:     item.suggested_qty,
+                  unit_price:   item.cost_price   ?? undefined,
+                });
+                setPOModalOpen(true);
+                setActiveTab("orders");
+              }}
+            />
+          </div>
+        )}
+
         {/* Phase 3: Audit Log tab */}
         {activeTab === "audit" && (
           <div className="space-y-8 animate-fade-in">
@@ -732,6 +860,32 @@ function Dashboard() {
         onSubmit={handleSupplierSubmit}
         supplier={editingSupplier}
         loading={supplierModalLoading}
+      />
+
+      {/* Phase 4: Purchase Order create/edit modal */}
+      <PurchaseOrderModal
+        isOpen={poModalOpen}
+        onClose={() => {
+          setPOModalOpen(false);
+          setEditingPO(null);
+          setPOModalPrefill(null);
+        }}
+        onSubmit={handlePOSubmit}
+        order={editingPO}
+        loading={poModalLoading}
+        prefill={poModalPrefill}
+      />
+
+      {/* Phase 4: Purchase Order detail modal */}
+      <PurchaseOrderDetail
+        poId={poDetailId}
+        onClose={() => setPODetailId(null)}
+        onEdit={(po) => {
+          setPODetailId(null);
+          setEditingPO(po);
+          setPOModalOpen(true);
+        }}
+        onRefresh={() => setPORefreshKey((k) => k + 1)}
       />
     </div>
   );

@@ -309,9 +309,11 @@ export async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS dimensions VARCHAR(100);
   `;
 
-  // stock_movements — link to users for audit trail (FK nullable, future RBAC)
+  // stock_movements — add stock_after (may be missing if table predates Phase 1)
+  // and link to users for audit trail (FK nullable, future RBAC)
   const alterStockMovementsColumns = `
     ALTER TABLE stock_movements
+      ADD COLUMN IF NOT EXISTS stock_after INTEGER NOT NULL DEFAULT 0,
       ADD COLUMN IF NOT EXISTS performed_by INTEGER REFERENCES users(id);
   `;
 

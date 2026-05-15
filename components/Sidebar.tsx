@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import {
   LayoutDashboard, Package, LineChart, Boxes, FolderKanban,
-  ChevronLeft, ChevronRight, Truck, ClipboardList,
+  ChevronLeft, ChevronRight, Truck, ClipboardList, ShoppingCart,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -18,6 +18,8 @@ const navItems = [
   { id: "inventory", label: "Inventory",  icon: Boxes },
   // Phase 2: Suppliers nav item
   { id: "suppliers", label: "Suppliers",  icon: Truck },
+  // Phase 4: Purchase Orders nav item
+  { id: "orders",    label: "Orders",     icon: ShoppingCart },
   { id: "reports",   label: "Reports",    icon: LineChart },
   { id: "projects",  label: "Workflows",  icon: FolderKanban },
   // Phase 3: Audit trail nav item
