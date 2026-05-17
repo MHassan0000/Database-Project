@@ -16,7 +16,8 @@ const pool = new Pool({
   connectionTimeoutMillis: 10_000, // Fail fast if connection takes >10s
   keepAlive: true,              // Prevent TCP connection drops on idle
   keepAliveInitialDelayMillis: 10_000, // Start keepalive probes after 10s idle
-  statement_timeout: 30_000,    // Kill queries running longer than 30s (safety net)
+  // NOTE: Do NOT set statement_timeout here — Supabase uses PgBouncer in
+  // transaction mode which rejects session-level parameters
 });
 
 export async function query(text: string, params?: (string | number | null | boolean | undefined | number[] | string[])[]) {

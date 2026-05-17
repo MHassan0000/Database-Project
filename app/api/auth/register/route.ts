@@ -99,8 +99,9 @@ export async function POST(request: NextRequest) {
 
     return new Response(response.body, { status: 201, headers });
   } catch (error) {
-    console.error("POST /api/auth/register error:", error);
-    return Response.json({ error: "Registration failed." }, { status: 500 });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("POST /api/auth/register error:", errMsg, error);
+    return Response.json({ error: "Registration failed.", detail: process.env.NODE_ENV !== "production" ? errMsg : undefined }, { status: 500 });
   }
 }
 // PHASE 8 END: POST /api/auth/register

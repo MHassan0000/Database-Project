@@ -75,8 +75,9 @@ export async function POST(request: NextRequest) {
 
     return new Response(response.body, { status: 200, headers });
   } catch (error) {
-    console.error("POST /api/auth/login error:", error);
-    return Response.json({ error: "Login failed." }, { status: 500 });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("POST /api/auth/login error:", errMsg, error);
+    return Response.json({ error: "Login failed.", detail: process.env.NODE_ENV !== "production" ? errMsg : undefined }, { status: 500 });
   }
 }
 // PHASE 8 END: POST /api/auth/login
