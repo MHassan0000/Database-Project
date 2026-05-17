@@ -6,6 +6,9 @@ const pool = new Pool({
   database: process.env.PG_DATABASE || "product_db",
   password: process.env.PG_PASSWORD || "Ilvn1304@",
   port: parseInt(process.env.PG_PORT || "5432"),
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 export async function query(text: string, params?: (string | number | null | boolean | undefined | number[] | string[])[]) {
