@@ -35,6 +35,9 @@ import ReorderSuggestions from "@/components/ReorderSuggestions";
 // PHASE 5 IMPLEMENTATION START
 import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
 // PHASE 5 IMPLEMENTATION END
+// PHASE 6 IMPLEMENTATION START
+import ImportModal from "@/components/ImportModal";
+// PHASE 6 IMPLEMENTATION END
 import { Database, ClipboardList, ShoppingCart } from "lucide-react";
 
 function Dashboard() {
@@ -104,6 +107,9 @@ function Dashboard() {
     quantity?: number;
     unit_price?: number;
   } | null>(null);
+
+  // PHASE 6: Batch import modal state
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   // Debounced search
   const [searchDebounce, setSearchDebounce] = useState("");
@@ -569,18 +575,33 @@ function Dashboard() {
 
         {activeTab === "catalog" && (
           <div className="space-y-8 animate-fade-in">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                Catalog
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+            {/* PHASE 6 IMPLEMENTATION START — Catalog header with Import CSV button */}
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
+                  Catalog
+                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                </div>
+                <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
+                  Product Catalog
+                </h2>
+                <p className="text-sm sm:text-base text-muted max-w-2xl">
+                  Curate and manage the full product lifecycle from draft to archive.
+                </p>
               </div>
-              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                Product Catalog
-              </h2>
-              <p className="text-sm sm:text-base text-muted max-w-2xl">
-                Curate and manage the full product lifecycle from draft to archive.
-              </p>
+              {/* PHASE 6: Import CSV button in catalog header */}
+              <button
+                id="catalog-import-csv-btn"
+                onClick={() => setImportModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold text-white border border-[#27272a] bg-[#0f141c] hover:bg-[#141a26] hover:border-[#3f3f46] transition-all"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v12" /><path d="M8 7l4-4 4 4" /><path d="M4 21h16" />
+                </svg>
+                Import CSV
+              </button>
             </div>
+            {/* PHASE 6 IMPLEMENTATION END */}
             <FilterBar
               search={search}
               onSearchChange={setSearch}
@@ -893,6 +914,18 @@ function Dashboard() {
         }}
         onRefresh={() => setPORefreshKey((k) => k + 1)}
       />
+
+      {/* PHASE 6 IMPLEMENTATION START — Batch import modal */}
+      {importModalOpen && (
+        <ImportModal
+          onClose={() => setImportModalOpen(false)}
+          onImportSuccess={() => {
+            setImportModalOpen(false);
+            fetchProducts();
+          }}
+        />
+      )}
+      {/* PHASE 6 IMPLEMENTATION END */}
     </div>
   );
 }

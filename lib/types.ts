@@ -24,6 +24,10 @@ export interface Product {
   barcode?: string | null;
   weight?: number | null;
   dimensions?: string | null;
+  // PHASE 7 IMPLEMENTATION START — primary image from product_images table
+  primary_image_url?: string | null;
+  primary_thumbnail_url?: string | null;
+  // PHASE 7 IMPLEMENTATION END
 }
 
 export interface ProductFormData {
@@ -296,10 +300,12 @@ export interface PurchaseOrderItemReceive {
 
 // ── Product Images ────────────────────────────────────────────────────────
 
+// PHASE 7 IMPLEMENTATION START
 export interface ProductImage {
   id: number;
   product_id: number;
   url: string;
+  thumbnail_url: string; // Phase 7: 200×200 WebP thumbnail path
   alt_text: string;
   sort_order: number;
   is_primary: boolean;
@@ -311,6 +317,7 @@ export interface ProductImageFormData {
   sort_order?: number;
   is_primary?: boolean;
 }
+// PHASE 7 IMPLEMENTATION END
 
 // ── Paginated response generics ───────────────────────────────────────────
 
@@ -408,4 +415,48 @@ export interface CategoryPerformanceResponse {
     total_products:  number;
     total_movements: number;
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 6: Batch Import types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Validation status of a single parsed CSV row */
+export type ImportRowStatus = "valid" | "error" | "warning";
+
+/** A single parsed + validated CSV row from the import preview */
+export interface ImportRow {
+  /** 1-based row number (excluding header) */
+  rowNumber: number;
+  status:    ImportRowStatus;
+  /** Parsed field values (may be partial on error rows) */
+  name:        string;
+  price:       string;
+  stock:       string;
+  sku:         string;
+  category:    string;
+  brand:       string;
+  description: string;
+  rating:      string;
+  status_val:  string; // renamed to avoid clash with ImportRowStatus.status
+  /** Human-readable validation messages */
+  errors:   string[];
+  warnings: string[];
+}
+
+/** Response from POST /api/products/import (parse + validate step) */
+export interface ImportPreviewResponse {
+  totalRows:    number;
+  validRows:    number;
+  errorRows:    number;
+  warningRows:  number;
+  rows:         ImportRow[];
+}
+
+/** Response from POST /api/products/import/confirm (execute step) */
+export interface ImportConfirmResponse {
+  imported:    number;
+  skipped:     number;
+  errors:      number;
+  importedIds: number[];
 }

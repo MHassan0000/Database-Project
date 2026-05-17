@@ -287,11 +287,20 @@ export default function ProductTable({
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#18181b] flex items-center justify-center text-white shrink-0 overflow-hidden border border-[#27272a]">
-                      {product.image_url ? (
+                      {/* PHASE 7 IMPLEMENTATION START — prefer uploaded thumbnail, then image_url, then icon */}
+                      {product.primary_thumbnail_url ? (
+                        <img
+                          src={product.primary_thumbnail_url}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : product.image_url ? (
                         <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                       ) : (
                         <CategoryIcon category={product.category} />
                       )}
+                      {/* PHASE 7 IMPLEMENTATION END */}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-white truncate max-w-50">

@@ -364,6 +364,14 @@ export async function initializeDatabase() {
   // 5. Phase 1: ALTER existing tables (after new tables exist for FK references)
   await query(alterProductsColumns);
   await query(alterStockMovementsColumns);
+
+  // PHASE 7 IMPLEMENTATION START
+  // Add thumbnail_url column to product_images (idempotent)
+  await query(`
+    ALTER TABLE product_images
+      ADD COLUMN IF NOT EXISTS thumbnail_url VARCHAR(500) DEFAULT '';
+  `);
+  // PHASE 7 IMPLEMENTATION END
 }
 
 export default pool;

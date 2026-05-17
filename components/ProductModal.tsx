@@ -2,9 +2,13 @@
 
 // Phase 2 — components/ProductModal.tsx
 // Modified: added supplier dropdown, cost_price, lead_days fields
+// PHASE 7 MODIFICATION: added ImageGallery section for existing products
 
 import { useState, useEffect } from "react";
 import { Product, ProductFormData } from "@/lib/types";
+// PHASE 7 IMPLEMENTATION START
+import ImageGallery from "@/components/ImageGallery";
+// PHASE 7 IMPLEMENTATION END
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -414,6 +418,29 @@ export default function ProductModal({
                 </p>
               )}
             </div>
+
+            {/* PHASE 7 IMPLEMENTATION START — Product Images (edit mode only) */}
+            {isEditing && product?.id && (
+              <div className="pt-1 border-t border-[#1c2333]">
+                <p className="text-xs uppercase tracking-wider text-[#71717a] mb-3 pt-2">
+                  Product Images
+                </p>
+                <ImageGallery
+                  productId={product.id}
+                  onPrimaryChanged={(url) => {
+                    if (url) handleChange("image_url", url);
+                  }}
+                />
+              </div>
+            )}
+            {!isEditing && (
+              <div className="pt-1 border-t border-[#1c2333]">
+                <p className="text-xs text-[#52525b] pt-2">
+                  💡 Save the product first, then re-open it to upload product images.
+                </p>
+              </div>
+            )}
+            {/* PHASE 7 IMPLEMENTATION END */}
 
           </div>
 

@@ -91,10 +91,19 @@ export async function GET(request: NextRequest) {
     const total = parseInt(countResult.rows[0].count);
 
     // Fetch products
+    // PHASE 7 IMPLEMENTATION START — include primary image fields via correlated subqueries
     const productsResult = await query(
-      `SELECT * FROM products ${whereClause} ORDER BY ${safeSortBy} ${safeSortOrder} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      `SELECT p.*,
+              (SELECT pi.url FROM product_images pi
+               WHERE pi.product_id = p.id AND pi.is_primary = true
+               ORDER BY pi.sort_order ASC LIMIT 1) AS primary_image_url,
+              (SELECT pi.thumbnail_url FROM product_images pi
+               WHERE pi.product_id = p.id AND pi.is_primary = true
+               ORDER BY pi.sort_order ASC LIMIT 1) AS primary_thumbnail_url
+       FROM products p ${whereClause} ORDER BY p.${safeSortBy} ${safeSortOrder} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...values, limit, offset]
     );
+    // PHASE 7 IMPLEMENTATION END
 
     return Response.json({
       products: productsResult.rows,
