@@ -3,12 +3,10 @@
 // Returns 401 if the session is missing or expired.
 
 import { type NextRequest } from "next/server";
-import { initializeDatabase } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    await initializeDatabase();
 
     const user = await getSession(request);
 

@@ -6,7 +6,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { join } from "path";
 import { promises as fs } from "fs";
 import sharp from "sharp";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START
 import { requireRole } from "@/lib/auth";
@@ -39,7 +39,6 @@ export async function GET(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const { id } = await params;
     const productId = parseInt(id);
     if (isNaN(productId)) {
@@ -77,7 +76,6 @@ export async function POST(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const { id } = await params;
     const productId = parseInt(id);
     if (isNaN(productId)) {

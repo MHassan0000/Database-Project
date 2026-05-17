@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 // Phase 3: audit logging
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START: bulk operations are admin-only
@@ -13,7 +13,6 @@ export async function PATCH(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const body = await request.json();
     const { ids, status } = body as { ids?: number[]; status?: string };
 
@@ -55,7 +54,6 @@ export async function DELETE(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const body = await request.json();
     const { ids } = body as { ids?: number[] };
 

@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 // PHASE 8 START
 import { requireRole } from "@/lib/auth";
 // PHASE 8 END
@@ -36,7 +36,6 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get("category");

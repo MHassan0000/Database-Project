@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 // Phase 3: audit logging
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START: role-based access control
@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get("category");
@@ -138,7 +137,6 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const body = await request.json();
     const { name, description, price, category, stock, brand, rating, image_url, sku, status } =

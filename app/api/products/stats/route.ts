@@ -1,4 +1,4 @@
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { type NextRequest } from "next/server";
 // PHASE 8 START
 import { requireRole } from "@/lib/auth";
@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   const auth = await requireRole(request, ["admin", "manager", "viewer"]);
   if (!auth.ok) return auth.response;
   try {
-    await initializeDatabase();
 
     // Total products
     const totalResult = await query("SELECT COUNT(*) as count FROM products");

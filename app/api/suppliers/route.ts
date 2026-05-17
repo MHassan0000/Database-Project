@@ -5,7 +5,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { initializeDatabase } from "@/lib/db";
 import { SupplierFormData } from "@/lib/types";
 // Phase 3: audit logging
 import { logAudit } from "@/lib/audit";
@@ -20,7 +19,6 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const { searchParams } = new URL(request.url);
     const search   = searchParams.get("search")   || "";
@@ -101,7 +99,6 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     let body: SupplierFormData;
     try {

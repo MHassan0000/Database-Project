@@ -2,7 +2,7 @@
 // GET /api/analytics/value-history?period=90d (all authenticated roles)
 
 import { NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 // PHASE 8 FIX START: RBAC guard
 import { requireRole } from "@/lib/auth";
 // PHASE 8 FIX END
@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
   const auth = await requireRole(request, ["admin", "manager", "viewer"]);
   if (!auth.ok) return auth.response;
   try {
-    await initializeDatabase();
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") ?? "90d";

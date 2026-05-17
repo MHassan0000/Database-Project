@@ -6,7 +6,7 @@
 // Logs one "import" audit entry summarising the entire batch.
 
 import { type NextRequest, NextResponse } from "next/server";
-import { withTransaction, initializeDatabase } from "@/lib/db";
+import { withTransaction } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import type { ImportRow } from "@/lib/types";
 import type { PoolClient } from "pg";
@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     let body: { rows?: ImportRow[] };
     try {

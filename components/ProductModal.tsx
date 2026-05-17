@@ -3,12 +3,14 @@
 // Phase 2 — components/ProductModal.tsx
 // Modified: added supplier dropdown, cost_price, lead_days fields
 // PHASE 7 MODIFICATION: added ImageGallery section for existing products
+// PHASE 9: replaced image_url text input with file upload (base64)
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, ProductFormData } from "@/lib/types";
 // PHASE 7 IMPLEMENTATION START
 import ImageGallery from "@/components/ImageGallery";
 // PHASE 7 IMPLEMENTATION END
+import { Upload, X, ImageIcon } from "lucide-react";
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -336,7 +338,7 @@ export default function ProductModal({
               </div>
             </div>
 
-            {/* Row: Status + Image URL */}
+            {/* Row: Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-white mb-1.5">
@@ -352,18 +354,80 @@ export default function ProductModal({
                   <option value="archived">Archived</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-white mb-1.5">
-                  Image URL
-                </label>
-                <input
-                  type="text"
-                  value={form.image_url}
-                  onChange={(e) => handleChange("image_url", e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]"
-                />
-              </div>
+            </div>
+
+            {/* Product Image Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-white mb-1.5">
+                Product Image
+              </label>
+              {form.image_url ? (
+                <div className="relative group w-full rounded-xl border border-[#1c2333] overflow-hidden bg-[#0f141c]">
+                  <div className="flex items-center gap-4 p-3">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-[#18181b] border border-[#27272a]">
+                      <img
+                        src={form.image_url}
+                        alt="Product preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white font-medium truncate">Image uploaded</p>
+                      <p className="text-xs text-[#52525b] mt-0.5">Click remove to change</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleChange("image_url", "")}
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-[#71717a] hover:text-red-400 transition-all shrink-0"
+                      title="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-white/40", "bg-white/5"); }}
+                  onDragLeave={(e) => { e.currentTarget.classList.remove("border-white/40", "bg-white/5"); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove("border-white/40", "bg-white/5");
+                    const file = e.dataTransfer.files?.[0];
+                    if (file && file.type.startsWith("image/")) {
+                      const reader = new FileReader();
+                      reader.onload = () => handleChange("image_url", reader.result as string);
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/jpeg,image/jpg,image/png,image/webp,image/gif,image/avif";
+                    input.onchange = (ev) => {
+                      const file = (ev.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => handleChange("image_url", reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="flex flex-col items-center justify-center gap-2 py-6 px-4 rounded-xl border-2 border-dashed border-[#27272a] hover:border-[#3f3f46] hover:bg-[#0f141c] cursor-pointer transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-[#71717a]" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-white">
+                      Click to upload or drag & drop
+                    </p>
+                    <p className="text-[10px] text-[#52525b] mt-0.5">
+                      JPEG · PNG · WebP · GIF · AVIF
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Phase 2: Supplier section */}

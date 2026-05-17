@@ -4,7 +4,7 @@
 // DELETE /api/purchase-orders/[id] — delete draft PO only (admin only)
 
 import { NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase, withTransaction } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
 import { PurchaseOrderFormData } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START
@@ -23,7 +23,6 @@ export async function GET(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const { id } = await params;
     const poId = parseInt(id, 10);
@@ -82,7 +81,6 @@ export async function PUT(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const { id } = await params;
     const poId = parseInt(id, 10);
@@ -209,7 +207,6 @@ export async function DELETE(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const { id } = await params;
     const poId = parseInt(id, 10);

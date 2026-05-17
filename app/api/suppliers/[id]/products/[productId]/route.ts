@@ -2,14 +2,13 @@
 // DELETE /api/suppliers/[id]/products/[productId] — unlink product from supplier
 
 import { NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; productId: string }> }
 ) {
   try {
-    await initializeDatabase();
 
     const { id, productId } = await params;
     const supplierId = parseInt(id, 10);

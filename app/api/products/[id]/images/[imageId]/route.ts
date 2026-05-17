@@ -5,7 +5,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { join } from "path";
 import { promises as fs } from "fs";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START
 import { requireRole } from "@/lib/auth";
@@ -39,7 +39,6 @@ export async function PATCH(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const { id, imageId } = await params;
     const productId = parseInt(id);
     const imgId     = parseInt(imageId);
@@ -113,7 +112,6 @@ export async function DELETE(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const { id, imageId } = await params;
     const productId = parseInt(id);
     const imgId     = parseInt(imageId);

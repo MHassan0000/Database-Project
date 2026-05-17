@@ -2,7 +2,7 @@
 // Used by every API route that requires authentication or role checks.
 
 import { type NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import type { SafeUser, UserRole } from "@/lib/types";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -22,7 +22,6 @@ export async function getSession(request: NextRequest): Promise<SafeUser | null>
   if (!token) return null;
 
   try {
-    await initializeDatabase();
 
     const result = await query(
       `SELECT u.id, u.name, u.email, u.role, u.avatar_url,

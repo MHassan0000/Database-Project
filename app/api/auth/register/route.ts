@@ -5,13 +5,12 @@
 import { type NextRequest } from "next/server";
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { buildSessionCookieHeader } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    await initializeDatabase();
 
     const body = await request.json();
     const { name, email, password } = body as {

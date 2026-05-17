@@ -42,7 +42,7 @@ import ImportModal from "@/components/ImportModal";
 import { useAuth } from "@/components/AuthProvider";
 import UserManagement from "@/components/UserManagement";
 // PHASE 8 END: imports
-import { Database, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 function Dashboard() {
   const { showToast } = useToast();
@@ -68,7 +68,7 @@ function Dashboard() {
     totalPages: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
+
 
   // Filters
   const [search, setSearch] = useState("");
@@ -181,20 +181,6 @@ function Dashboard() {
     setPage(1);
   }, [category, minPrice, maxPrice, minRating, searchDebounce, status, sortBy, sortOrder]);
 
-  // Seed database
-  const handleSeed = async () => {
-    setSeeding(true);
-    try {
-      const res = await fetch("/api/products/seed", { method: "POST" });
-      const json = await res.json();
-      showToast(json.message, "success");
-      fetchProducts();
-    } catch {
-      showToast("Failed to seed database", "error");
-    } finally {
-      setSeeding(false);
-    }
-  };
 
   // Create / Update
   const handleSubmit = async (formData: ProductFormData) => {
@@ -477,25 +463,7 @@ function Dashboard() {
                     <div className="text-xs uppercase text-[#a1a1aa] tracking-wider">Total SKUs</div>
                     <div className="text-lg font-semibold text-white">{data.total}</div>
                   </div>
-                  {data.total === 0 && !loading && (
-                    <button
-                      onClick={handleSeed}
-                      disabled={seeding}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/5 text-white border border-[#3f3f46] hover:bg-white/10 transition-all disabled:opacity-50"
-                    >
-                      {seeding ? (
-                        <>
-                          <svg className="animate-spin-slow w-4 h-4" viewBox="0 0 24 24" fill="none">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Seeding...
-                        </>
-                      ) : (
-                        <><Database className="w-4 h-4" /> Seed Sample Data</>
-                      )}
-                    </button>
-                  )}
+
                 </div>
               </div>
 

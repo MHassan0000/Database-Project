@@ -2,7 +2,7 @@
 // POST /api/suppliers/[id]/products — link a product to this supplier (admin/manager)
 
 import { NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { ProductSupplierFormData } from "@/lib/types";
 // PHASE 8 FIX START: RBAC guard
 import { requireRole } from "@/lib/auth";
@@ -15,7 +15,6 @@ export async function POST(
   const auth = await requireRole(request, ["admin", "manager"]);
   if (!auth.ok) return auth.response;
   try {
-    await initializeDatabase();
 
     const { id } = await params;
     const supplierId = parseInt(id, 10);

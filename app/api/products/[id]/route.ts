@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { query, initializeDatabase, withTransaction } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
 // Phase 3: audit logging
 import { logAudit, buildDiff } from "@/lib/audit";
 // PHASE 8 START: RBAC enforcement
@@ -14,7 +14,6 @@ export async function GET(
   const auth = await requireRole(request, ["admin", "manager", "viewer"]);
   if (!auth.ok) return auth.response;
   try {
-    await initializeDatabase();
     const { id } = await params;
 
     const result = await query("SELECT * FROM products WHERE id = $1", [
@@ -45,7 +44,6 @@ export async function PUT(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const { id } = await params;
     const body = await request.json();
     const { name, description, price, category, stock, brand, rating, image_url, sku, status } =
@@ -122,7 +120,6 @@ export async function DELETE(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const { id } = await params;
 
     const result = await query(
@@ -174,7 +171,6 @@ export async function PATCH(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
     const { id } = await params;
     const body = await request.json();
     const { delta, reason, note } = body as {

@@ -4,13 +4,12 @@
 
 import { type NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 
 // GET /api/users — list all users (admin only)
 export async function GET(request: NextRequest) {
-  await initializeDatabase();
 
   const auth = await requireRole(request, ["admin"]);
   if (!auth.ok) return auth.response;
@@ -49,7 +48,6 @@ export async function GET(request: NextRequest) {
 
 // POST /api/users — admin creates a user directly (no session cookie returned)
 export async function POST(request: NextRequest) {
-  await initializeDatabase();
 
   const auth = await requireRole(request, ["admin"]);
   if (!auth.ok) return auth.response;

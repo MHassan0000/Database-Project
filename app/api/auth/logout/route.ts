@@ -2,12 +2,11 @@
 // Deletes the current session from the database and clears the session cookie.
 
 import { type NextRequest } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { SESSION_COOKIE, buildClearCookieHeader } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    await initializeDatabase();
 
     const token = request.cookies.get(SESSION_COOKIE)?.value;
 

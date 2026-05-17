@@ -3,7 +3,7 @@
 // POST /api/purchase-orders — create PO with line items (admin/manager)
 
 import { NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase, withTransaction } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
 import { PurchaseOrderFormData } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START
@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const sp = request.nextUrl.searchParams;
 
@@ -117,7 +116,6 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     let body: PurchaseOrderFormData;
     try {

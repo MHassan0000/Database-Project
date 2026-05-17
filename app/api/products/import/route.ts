@@ -3,7 +3,7 @@
 // POST /api/products/import          — parses + validates a CSV upload, returns preview (admin/manager)
 
 import { type NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 // PHASE 8 FIX START: RBAC guards for import
 import { requireRole } from "@/lib/auth";
 // PHASE 8 FIX END
@@ -229,7 +229,6 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
   // PHASE 8 FIX END
   try {
-    await initializeDatabase();
 
     // Accept multipart/form-data with field named "file"
     let formData: FormData;

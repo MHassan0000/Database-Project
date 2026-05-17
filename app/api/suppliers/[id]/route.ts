@@ -5,7 +5,7 @@
 // Phase 3: logAudit integrated into PUT and DELETE
 
 import { NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { SupplierFormData } from "@/lib/types";
 // Phase 3: audit logging
 import { logAudit } from "@/lib/audit";
@@ -23,7 +23,6 @@ export async function GET(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const { id } = await params;
     const supplierId = parseInt(id, 10);
@@ -87,7 +86,6 @@ export async function PUT(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const { id } = await params;
     const supplierId = parseInt(id, 10);
@@ -186,7 +184,6 @@ export async function DELETE(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const { id } = await params;
     const supplierId = parseInt(id, 10);

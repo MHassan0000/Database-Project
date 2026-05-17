@@ -13,7 +13,7 @@
 //   6. Log to audit_log
 
 import { NextRequest, NextResponse } from "next/server";
-import { query, initializeDatabase, withTransaction } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
 import { PurchaseOrderItemReceive } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START
@@ -31,7 +31,6 @@ export async function PATCH(
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
-    await initializeDatabase();
 
     const { id } = await params;
     const poId = parseInt(id, 10);

@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 // PHASE 8 START
 import { requireRole } from "@/lib/auth";
 // PHASE 8 END
@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   const auth = await requireRole(request, ["admin", "manager", "viewer"]);
   if (!auth.ok) return auth.response;
   try {
-    await initializeDatabase();
 
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");

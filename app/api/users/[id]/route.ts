@@ -4,7 +4,7 @@
 
 import { type NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
-import { query, initializeDatabase } from "@/lib/db";
+import { query } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { logAudit, buildDiff } from "@/lib/audit";
 // PHASE 8 FIX END: password-reset support
@@ -14,7 +14,6 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await initializeDatabase();
 
   const auth = await requireRole(request, ["admin"]);
   if (!auth.ok) return auth.response;
@@ -137,7 +136,6 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await initializeDatabase();
 
   const auth = await requireRole(request, ["admin"]);
   if (!auth.ok) return auth.response;
