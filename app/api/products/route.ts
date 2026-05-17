@@ -93,26 +93,30 @@ export async function GET(request: NextRequest) {
       : "created_at";
     const safeSortOrder = sortOrder === "asc" ? "ASC" : "DESC";
 
-    // Count total
-    const countResult = await query(
-      `SELECT COUNT(*) FROM products ${whereClause}`,
-      values
-    );
+    // Run count + data queries in PARALLEL to halve round-trip latency
+    // PHASE 7 IMPLEMENTATION START — include primary image via LEFT JOIN (faster than correlated subqueries)
+    const [countResult, productsResult] = await Promise.all([
+      query(
+        `SELECT COUNT(*) FROM products ${whereClause}`,
+        values
+      ),
+      query(
+        `SELECT p.*,
+                pi.url AS primary_image_url,
+                pi.thumbnail_url AS primary_thumbnail_url
+         FROM products p
+         LEFT JOIN LATERAL (
+           SELECT url, thumbnail_url FROM product_images
+           WHERE product_id = p.id AND is_primary = true
+           ORDER BY sort_order ASC LIMIT 1
+         ) pi ON true
+         ${whereClause.replace(/products/g, 'products p').length !== whereClause.length ? whereClause : whereClause}
+         ORDER BY p.${safeSortBy} ${safeSortOrder}
+         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+        [...values, limit, offset]
+      ),
+    ]);
     const total = parseInt(countResult.rows[0].count);
-
-    // Fetch products
-    // PHASE 7 IMPLEMENTATION START — include primary image fields via correlated subqueries
-    const productsResult = await query(
-      `SELECT p.*,
-              (SELECT pi.url FROM product_images pi
-               WHERE pi.product_id = p.id AND pi.is_primary = true
-               ORDER BY pi.sort_order ASC LIMIT 1) AS primary_image_url,
-              (SELECT pi.thumbnail_url FROM product_images pi
-               WHERE pi.product_id = p.id AND pi.is_primary = true
-               ORDER BY pi.sort_order ASC LIMIT 1) AS primary_thumbnail_url
-       FROM products p ${whereClause} ORDER BY p.${safeSortBy} ${safeSortOrder} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      [...values, limit, offset]
-    );
     // PHASE 7 IMPLEMENTATION END
 
     return Response.json({

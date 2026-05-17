@@ -56,26 +56,26 @@ export async function GET(request: NextRequest) {
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    // Count query for pagination
-    const countResult = await query(
-      `SELECT COUNT(*) FROM suppliers s ${whereClause}`,
-      params
-    );
+    // Run count + data queries in PARALLEL
+    const [countResult, dataResult] = await Promise.all([
+      query(
+        `SELECT COUNT(*) FROM suppliers s ${whereClause}`,
+        params
+      ),
+      query(
+        `SELECT
+           s.*,
+           COUNT(DISTINCT ps.product_id) AS linked_products
+         FROM suppliers s
+         LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id
+         ${whereClause}
+         GROUP BY s.id
+         ORDER BY s.${safeSortBy} ${safeSortOrder}
+         LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+        [...params, limit, offset]
+      ),
+    ]);
     const total = parseInt(countResult.rows[0].count, 10);
-
-    // Data query — also fetch linked product count per supplier
-    const dataResult = await query(
-      `SELECT
-         s.*,
-         COUNT(DISTINCT ps.product_id) AS linked_products
-       FROM suppliers s
-       LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id
-       ${whereClause}
-       GROUP BY s.id
-       ORDER BY s.${safeSortBy} ${safeSortOrder}
-       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
-      [...params, limit, offset]
-    );
 
     return NextResponse.json({
       suppliers: dataResult.rows,
