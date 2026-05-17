@@ -115,7 +115,7 @@ export default function FilterBar({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:flex-nowrap">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium border transition-all ${

@@ -61,7 +61,7 @@ export default function UserMenu({ collapsed = false }: UserMenuProps) {
         </button>
 
         {open && (
-          <div className="absolute bottom-14 left-0 z-50 w-52 rounded-2xl border border-[#27272a] bg-[#111113] shadow-2xl shadow-black/60 p-2 animate-scale-in">
+          <div className="absolute bottom-14 left-0 z-[80] w-52 rounded-2xl border border-[#27272a] bg-[#111113] shadow-2xl shadow-black/60 p-2 animate-scale-in">
             <div className="px-3 py-2 border-b border-[#27272a] mb-2">
               <p className="text-sm font-medium text-white truncate">{user.name}</p>
               <p className="text-xs text-[#71717a] truncate">{user.email}</p>
@@ -86,7 +86,7 @@ export default function UserMenu({ collapsed = false }: UserMenuProps) {
 
   // ── Expanded state ──────────────────────────────────────────────────────────
   return (
-    <div className="relative">
+    <div className="relative z-[80]">
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-[#18181b] transition-colors group"
@@ -112,7 +112,7 @@ export default function UserMenu({ collapsed = false }: UserMenuProps) {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute bottom-full mb-2 left-0 right-0 z-50 rounded-2xl border border-[#27272a] bg-[#111113] shadow-2xl shadow-black/60 p-2 animate-scale-in">
+        <div className="absolute bottom-full mb-2 left-0 right-0 z-[80] rounded-2xl border border-[#27272a] bg-[#111113] shadow-2xl shadow-black/60 p-2 animate-scale-in">
           <div className="px-3 py-2 border-b border-[#27272a] mb-2">
             <p className="text-xs text-[#71717a] truncate">{user.email}</p>
           </div>

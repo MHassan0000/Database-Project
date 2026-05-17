@@ -109,7 +109,7 @@ export default function QuickActions({ onImportClick, onTabChange }: QuickAction
 
       {/* Inline toast — appears at bottom of card */}
       {toast && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#18181b] border border-[#27272a] text-xs text-[#a1a1aa] shadow-lg animate-fade-in whitespace-nowrap">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex max-w-[calc(100%-2rem)] items-center gap-2 px-4 py-2 rounded-2xl bg-[#18181b] border border-[#27272a] text-center text-xs text-[#a1a1aa] shadow-lg animate-fade-in whitespace-normal sm:whitespace-nowrap">
           <span className="w-1.5 h-1.5 rounded-full bg-[#52525b]" />
           {toast}
         </div>

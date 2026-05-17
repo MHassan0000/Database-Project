@@ -11,7 +11,6 @@ import ProductTable from "@/components/ProductTable";
 import ProductModal from "@/components/ProductModal";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import Pagination from "@/components/Pagination";
-import Reports from "@/components/Reports";
 import StockAdjustModal from "@/components/StockAdjustModal";
 import DashboardStats from "@/components/DashboardStats";
 import BulkActions from "@/components/BulkActions";
@@ -166,7 +165,7 @@ function Dashboard() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch products");
       setData(json);
-    } catch (err) {
+    } catch {
       showToast("Failed to fetch products", "error");
     } finally {
       setLoading(false);
@@ -450,12 +449,13 @@ function Dashboard() {
   // PHASE 8 END: auth loading state
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="min-h-screen bg-transparent overflow-x-hidden lg:h-[100dvh] lg:overflow-hidden">
       <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
-      <div className="flex">
+      <div className="lg:flex lg:h-full lg:items-stretch">
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="relative z-0 w-full min-w-0 lg:flex-1 lg:min-h-0 lg:h-full lg:overflow-y-auto lg:overscroll-contain overflow-x-hidden">
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-10">
         {activeTab === "dashboard" && (
           <div className="space-y-8 animate-fade-in">
               {/* Header */}
@@ -890,18 +890,15 @@ function Dashboard() {
             <AuditLog />
           </div>
         )}
-
+            {/* Footer */}
+            <footer className="mt-10 border-t border-[#27272a] py-5">
+              <p className="text-xs text-[#71717a] text-center">
+                Obsidian © {new Date().getFullYear()} — Inventory Suite
+              </p>
+            </footer>
+          </div>
         </main>
       </div>
-
-      {/* Footer */}
-      <footer className="border-t border-[#27272a] py-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-[#71717a] text-center">
-            Obsidian © {new Date().getFullYear()} — Inventory Suite
-          </p>
-        </div>
-      </footer>
 
       {/* Modals */}
       <ProductModal

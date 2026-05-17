@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import {
-  Package, BarChart2, LayoutDashboard, Boxes,
-  FolderKanban, Menu, X,
+  Menu, X, LogOut,
 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
+import { getNavItemsForRole } from "@/components/navigation";
 
 interface NavbarProps {
   activeTab: string;
@@ -14,19 +15,24 @@ interface NavbarProps {
 
 export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, logout } = useAuth();
 
-  const tabs = [
-    { id: "dashboard", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: "catalog", label: "Catalog", icon: <Package className="w-4 h-4" /> },
-    { id: "inventory", label: "Inventory", icon: <Boxes className="w-4 h-4" /> },
-    { id: "reports", label: "Reports", icon: <BarChart2 className="w-4 h-4" /> },
-    { id: "projects", label: "Workflows", icon: <FolderKanban className="w-4 h-4" /> },
-  ];
+  const tabs = getNavItemsForRole(user?.role);
+  const initials = user?.name
+    ?.split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) ?? "U";
+
+  const roleLabel = user?.role
+    ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+    : "";
 
   return (
     <nav className="glass sticky top-0 z-50 border-b border-[#27272a] lg:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between min-h-18 py-3">
+        <div className="flex items-center justify-between gap-3 min-h-[4.5rem] py-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#18181b] flex items-center justify-center shadow-lg shadow-black/40 border border-[#27272a] overflow-hidden">
               <Image src="/images/logobg.png" alt="Obsidian" width={35} height={35} className="object-contain" />
@@ -41,20 +47,25 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-1 bg-[#111113] rounded-2xl p-1.5 border border-[#27272a] overflow-x-auto max-w-xl">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeTab === tab.id
-                  ? "bg-[#27272a] text-white shadow-md shadow-black/30 border border-[#3f3f46]"
-                  : "text-[#a1a1aa] hover:text-white"
-                  }`}
-              >
-                <span>{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
+          <div className="hidden md:flex min-w-0 flex-1 justify-end">
+            <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl bg-[#111113] p-1.5 border border-[#27272a]">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => onTabChange(tab.id)}
+                    className={`flex flex-shrink-0 items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeTab === tab.id
+                      ? "bg-[#27272a] text-white shadow-md shadow-black/30 border border-[#3f3f46]"
+                      : "text-[#a1a1aa] hover:text-white"
+                      }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <button
@@ -67,23 +78,56 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
 
         {mobileOpen && (
           <div className="md:hidden pb-4 animate-slide-down">
-            <div className="flex flex-col gap-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    onTabChange(tab.id);
-                    setMobileOpen(false);
-                  }}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id
-                    ? "bg-[#27272a] text-white"
-                    : "text-[#a1a1aa] hover:bg-[#18181b]"
-                    }`}
-                >
-                  <span>{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
+            <div className="space-y-4 rounded-3xl border border-[#27272a] bg-[#111113]/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl max-h-[calc(100dvh-5rem)] overflow-y-auto">
+              <div className="grid gap-1">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        onTabChange(tab.id);
+                        setMobileOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${activeTab === tab.id
+                        ? "bg-[#27272a] text-white"
+                        : "text-[#a1a1aa] hover:bg-[#18181b]"
+                        }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {user && (
+                <div className="rounded-2xl border border-[#27272a] bg-[#0f141c] p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#18181b] border border-[#3f3f46] flex items-center justify-center text-sm font-semibold text-white shrink-0">
+                      {initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate">{user.name}</p>
+                      <p className="text-xs text-[#71717a] truncate">{user.email}</p>
+                    </div>
+                    <span className="inline-flex items-center rounded-md border border-[#27272a] bg-[#18181b] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#a1a1aa]">
+                      {roleLabel}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      void logout();
+                    }}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#27272a] bg-[#18181b] px-4 py-2.5 text-sm font-semibold text-[#f87171] transition-colors hover:bg-[#f87171]/10"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Log out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

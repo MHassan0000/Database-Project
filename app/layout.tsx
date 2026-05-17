@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`h-full ${plex.variable} ${fraunces.variable}`}>
-      <body className={`min-h-full flex flex-col bg-background text-foreground antialiased ${plex.className}`}>
+      <body className={`min-h-screen flex flex-col overflow-x-hidden bg-background text-foreground antialiased ${plex.className}`}>
         {/* PHASE 8 START: global auth context */}
         <AuthProvider>
           {children}
