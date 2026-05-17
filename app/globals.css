@@ -299,3 +299,19 @@ body::after {
   mask-composite: exclude;
   pointer-events: none;
 }
+
+/* Premium universal button interactions */
+button, 
+input[type="button"], 
+input[type="submit"],
+select {
+  cursor: pointer !important;
+}
+
+button:active,
+input[type="button"]:active,
+input[type="submit"]:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
