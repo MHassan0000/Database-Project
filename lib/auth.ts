@@ -97,7 +97,9 @@ export async function requireRole(
  */
 export function buildSessionCookieHeader(token: string): string {
   const expires = new Date(Date.now() + SESSION_DURATION_MS);
-  return `${SESSION_COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Expires=${expires.toUTCString()}`;
+  const isProduction = process.env.NODE_ENV === "production";
+  const secure = isProduction ? "; Secure" : "";
+  return `${SESSION_COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Expires=${expires.toUTCString()}${secure}`;
 }
 
 /**
@@ -105,6 +107,8 @@ export function buildSessionCookieHeader(token: string): string {
  * immediately expires the session cookie.
  */
 export function buildClearCookieHeader(): string {
-  return `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0`;
+  const isProduction = process.env.NODE_ENV === "production";
+  const secure = isProduction ? "; Secure" : "";
+  return `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0${secure}`;
 }
 // PHASE 8 END: lib/auth.ts
