@@ -173,8 +173,10 @@ function Dashboard() {
   }, [category, minPrice, maxPrice, minRating, searchDebounce, status, sortBy, sortOrder, page, showToast]);
 
   useEffect(() => {
+    // Don't fetch until auth is resolved and user is confirmed
+    if (authLoading || !user) return;
     fetchProducts();
-  }, [fetchProducts]);
+  }, [fetchProducts, authLoading, user]);
 
   // Reset page on filter change
   useEffect(() => {
