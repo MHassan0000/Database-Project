@@ -82,7 +82,7 @@ export default function LoginPage() {
         {/* Logo & branding */}
         <div className="flex flex-col items-center gap-3">
           <div className="w-14 h-14 rounded-3xl bg-[#18181b] border border-[#27272a] flex items-center justify-center shadow-lg shadow-black/40 overflow-hidden">
-            <Image src="/images/logobg.png" alt="Obsidian" width={40} height={40} className="object-contain" />
+            <Image src="/images/logobg.png" alt="Obsidian" width={40} height={40} className="object-contain" priority />
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-white font-(--font-display)">Obsidian</h1>

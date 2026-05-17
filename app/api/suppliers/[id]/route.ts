@@ -11,6 +11,7 @@ import { SupplierFormData } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START
 import { requireRole } from "@/lib/auth";
+import { supplierSchema, firstZodError } from "@/lib/validation";
 // PHASE 8 END
 
 // ── GET /api/suppliers/[id] ───────────────────────────────────────────────────

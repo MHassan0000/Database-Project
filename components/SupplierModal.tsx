@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { Supplier, SupplierFormData, SupplierStatus } from "@/lib/types";
+import { supplierSchema, formatZodErrors } from "@/lib/validation";
 
 interface SupplierModalProps {
   isOpen: boolean;
@@ -57,21 +58,13 @@ export default function SupplierModal({
   }, [supplier, isOpen]);
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!form.name?.trim()) {
-      newErrors.name = "Supplier name is required";
+    const result = supplierSchema.safeParse(form);
+    if (!result.success) {
+      setErrors(formatZodErrors(result.error));
+      return false;
     }
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = "Invalid email address";
-    }
-    const ratingVal = form.rating !== "" ? Number(form.rating) : null;
-    if (ratingVal !== null && (isNaN(ratingVal) || ratingVal < 0 || ratingVal > 5)) {
-      newErrors.rating = "Rating must be between 0 and 5";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleChange = (field: keyof SupplierFormData, value: string) => {

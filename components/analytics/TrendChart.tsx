@@ -143,7 +143,7 @@ export default function TrendChart() {
             No movement data for this period. Receive a purchase order to generate activity.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minHeight={0}>
             <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="inboundGrad" x1="0" y1="0" x2="0" y2="1">

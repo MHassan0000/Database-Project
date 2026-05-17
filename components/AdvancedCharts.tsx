@@ -90,7 +90,7 @@ export default function AdvancedCharts({ products }: AdvancedChartsProps) {
           <span className="text-xs text-[#8b93a7]">Last 8 months</span>
         </div>
         <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minHeight={0}>
             <AreaChart data={trendData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="trend" x1="0" y1="0" x2="0" y2="1">

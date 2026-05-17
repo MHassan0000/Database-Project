@@ -4,6 +4,7 @@ import { query } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START: role-based access control
 import { requireRole } from "@/lib/auth";
+import { productSchema, firstZodError } from "@/lib/validation";
 // PHASE 8 END
 
 // GET /api/products - fetch all products (all authenticated roles)
@@ -139,42 +140,29 @@ export async function POST(request: NextRequest) {
   try {
 
     const body = await request.json();
-    const { name, description, price, category, stock, brand, rating, image_url, sku, status } =
-      body;
 
-    if (!name || name.trim() === "") {
+    // Zod validation
+    const parsed = productSchema.safeParse(body);
+    if (!parsed.success) {
       return Response.json(
-        { error: "Product name is required" },
+        { error: firstZodError(parsed.error) },
         { status: 400 }
       );
     }
-
-    if (price === undefined || price === null || isNaN(Number(price)) || Number(price) < 0) {
-      return Response.json(
-        { error: "Valid price is required" },
-        { status: 400 }
-      );
-    }
-
-    if (stock !== undefined && (isNaN(Number(stock)) || Number(stock) < 0)) {
-      return Response.json(
-        { error: "Stock must be a non-negative number" },
-        { status: 400 }
-      );
-    }
+    const { name, description, price, category, stock, brand, rating, image_url, sku, status } = parsed.data;
 
     const result = await query(
       `INSERT INTO products (name, description, price, category, stock, brand, rating, image_url, sku, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
-        name.trim(),
+        name,
         description || "",
-        Number(price),
+        price,
         category || "Uncategorized",
-        Number(stock) || 0,
+        stock || 0,
         brand || "",
-        Number(rating) || 0,
+        rating || 0,
         image_url || "",
         sku || "",
         status || "active",

@@ -200,7 +200,7 @@ export default function AnalyticsDashboard() {
           <div className="py-6 text-center text-xs text-[#52525b]">No category data yet.</div>
         ) : (
           <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={0}>
               <BarChart data={barData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1c2233" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#52525b" }} axisLine={false} tickLine={false} />

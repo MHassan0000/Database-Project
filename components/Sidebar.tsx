@@ -31,7 +31,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className={`flex items-center ${collapsed ? "flex-col gap-3" : "justify-between"}`}>
           <div className={`flex items-center ${collapsed ? "flex-col" : "gap-3"}`}>
             <div className={`${collapsed ? "w-12 h-12" : "w-10 h-10"} rounded-2xl bg-[#18181b] flex items-center justify-center shadow-lg shadow-black/40 border border-[#27272a] overflow-hidden transition-all`}>
-              <Image src="/images/logobg.png" alt="Obsidian" width={35} height={35} className="object-contain" />
+              <Image src="/images/logobg.png" alt="Obsidian" width={35} height={35} className="object-contain" priority />
             </div>
             {!collapsed && (
               <div>

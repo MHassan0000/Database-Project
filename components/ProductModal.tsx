@@ -11,6 +11,7 @@ import { Product, ProductFormData } from "@/lib/types";
 import ImageGallery from "@/components/ImageGallery";
 // PHASE 7 IMPLEMENTATION END
 import { Upload, X, ImageIcon } from "lucide-react";
+import { productSchema, formatZodErrors } from "@/lib/validation";
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -93,21 +94,11 @@ export default function ProductModal({
   }, [product, isOpen]);
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!form.name.trim()) newErrors.name = "Product name is required";
-    if (!form.price && form.price !== 0) newErrors.price = "Price is required";
-    else if (isNaN(Number(form.price)) || Number(form.price) < 0)
-      newErrors.price = "Price must be a valid positive number";
-
-    if (form.stock !== "" && (isNaN(Number(form.stock)) || Number(form.stock) < 0))
-      newErrors.stock = "Stock must be a non-negative number";
-
-    if (
-      form.rating !== "" &&
-      (isNaN(Number(form.rating)) || Number(form.rating) < 0 || Number(form.rating) > 5)
-    )
-      newErrors.rating = "Rating must be between 0 and 5";
+    const result = productSchema.safeParse(form);
+    if (!result.success) {
+      setErrors(formatZodErrors(result.error));
+      return false;
+    }
 
     // Phase 2: validate supplier fields if a supplier is selected
     if (selectedSupplierId) {
@@ -118,8 +109,8 @@ export default function ProductModal({
     }
     setSupplierError("");
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   // Phase 2: fetch active suppliers for dropdown
@@ -209,6 +200,7 @@ export default function ProductModal({
                   value={form.name}
                   onChange={(e) => handleChange("name", e.target.value)}
                   placeholder="e.g. MacBook Pro 16&quot;"
+                  maxLength={255}
                   className={`w-full px-4 py-2.5 rounded-xl border ${
                     errors.name ? "border-red-500/50 bg-red-500/10" : "border-[#1c2333]"
                   } text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]`}
@@ -226,6 +218,7 @@ export default function ProductModal({
                   value={form.sku}
                   onChange={(e) => handleChange("sku", e.target.value)}
                   placeholder="e.g. APL-001"
+                  maxLength={50}
                   className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]"
                 />
               </div>
@@ -241,8 +234,14 @@ export default function ProductModal({
                 onChange={(e) => handleChange("description", e.target.value)}
                 placeholder="Describe your product..."
                 rows={3}
-                className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] resize-none bg-[#0f141c] text-white placeholder:text-[#667085]"
+                maxLength={5000}
+                className={`w-full px-4 py-2.5 rounded-xl border ${
+                  errors.description ? "border-red-500/50 bg-red-500/10" : "border-[#1c2333]"
+                } text-sm transition-all hover:border-[#2a344a] resize-none bg-[#0f141c] text-white placeholder:text-[#667085]`}
               />
+              {errors.description && (
+                <p className="text-xs text-red-500 mt-1">{errors.description}</p>
+              )}
             </div>
 
             {/* Row: Price + Stock + Rating */}
@@ -255,6 +254,7 @@ export default function ProductModal({
                   type="number"
                   step="0.01"
                   min="0"
+                  max="9999999.99"
                   value={form.price}
                   onChange={(e) => handleChange("price", e.target.value)}
                   placeholder="0.00"
@@ -273,6 +273,7 @@ export default function ProductModal({
                 <input
                   type="number"
                   min="0"
+                  max="9999999"
                   value={form.stock}
                   onChange={(e) => handleChange("stock", e.target.value)}
                   placeholder="0"

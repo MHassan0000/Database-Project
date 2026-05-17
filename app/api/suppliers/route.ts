@@ -10,6 +10,7 @@ import { SupplierFormData } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 // PHASE 8 START
 import { requireRole } from "@/lib/auth";
+import { supplierSchema, firstZodError } from "@/lib/validation";
 // PHASE 8 END
 
 // ── GET /api/suppliers ────────────────────────────────────────────────────────
@@ -100,31 +101,19 @@ export async function POST(request: NextRequest) {
   // PHASE 8 END
   try {
 
-    let body: SupplierFormData;
+    let rawBody: unknown;
     try {
-      body = await request.json();
+      rawBody = await request.json();
     } catch {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { name, email, phone, address, website, contact_person, rating, status, notes } = body;
-
-    // Validation
-    if (!name || typeof name !== "string" || !name.trim()) {
-      return NextResponse.json({ error: "Supplier name is required" }, { status: 400 });
+    // Zod validation
+    const parsed = supplierSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstZodError(parsed.error) }, { status: 400 });
     }
-    if (name.trim().length > 255) {
-      return NextResponse.json({ error: "Supplier name must be 255 characters or fewer" }, { status: 400 });
-    }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
-    }
-    const ratingNum = rating !== undefined && rating !== "" ? Number(rating) : 0;
-    if (isNaN(ratingNum) || ratingNum < 0 || ratingNum > 5) {
-      return NextResponse.json({ error: "Rating must be between 0 and 5" }, { status: 400 });
-    }
-    const allowedStatuses = ["active", "inactive"];
-    const safeStatus = allowedStatuses.includes(status || "") ? status : "active";
+    const { name, email, phone, address, website, contact_person, rating, status, notes } = parsed.data;
 
     const result = await query(
       `INSERT INTO suppliers
@@ -132,14 +121,14 @@ export async function POST(request: NextRequest) {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
-        name.trim(),
+        name,
         email    || null,
         phone    || null,
         address  || null,
         website  || null,
         contact_person || null,
-        ratingNum,
-        safeStatus,
+        rating,
+        status,
         notes || "",
       ]
     );

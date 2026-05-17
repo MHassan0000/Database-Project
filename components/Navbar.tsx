@@ -35,7 +35,7 @@ export default function Navbar({ activeTab, onTabChange }: NavbarProps) {
         <div className="flex items-center justify-between gap-3 min-h-[4.5rem] py-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#18181b] flex items-center justify-center shadow-lg shadow-black/40 border border-[#27272a] overflow-hidden">
-              <Image src="/images/logobg.png" alt="Obsidian" width={35} height={35} className="object-contain" />
+              <Image src="/images/logobg.png" alt="Obsidian" width={35} height={35} className="object-contain" priority />
             </div>
             <div className="space-y-0.5">
               <h1 className="text-xl sm:text-2xl tracking-tight text-white font-(--font-display)">

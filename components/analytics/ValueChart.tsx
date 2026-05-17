@@ -114,7 +114,7 @@ export default function ValueChart() {
             No value history yet. Stock adjustments and received POs will populate this chart.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minHeight={0}>
             <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1c2233" vertical={false} />
               <XAxis dataKey="label" stroke="#3f3f46" tick={{ fontSize: 9, fill: "#52525b" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
