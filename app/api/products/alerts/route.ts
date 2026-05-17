@@ -1,8 +1,13 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-// GET /api/products/alerts - low stock and out of stock lists
+// GET /api/products/alerts (all authenticated roles)
 export async function GET(request: NextRequest) {
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
     const searchParams = request.nextUrl.searchParams;

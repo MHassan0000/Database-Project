@@ -1,27 +1,50 @@
 "use client";
+// PHASE 8 START: Sidebar updated with role-aware nav and UserMenu
 
 import { useState } from "react";
 import Image from "next/image";
 import {
   LayoutDashboard, Package, LineChart, Boxes, FolderKanban,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Truck, ClipboardList, ShoppingCart,
+  Users,
 } from "lucide-react";
+// PHASE 8: UserMenu and auth context
+import UserMenu from "@/components/UserMenu";
+import { useAuth } from "@/components/AuthProvider";
 
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
 
-const navItems = [
-  { id: "dashboard", label: "Overview", icon: LayoutDashboard },
-  { id: "catalog", label: "Catalog", icon: Package },
-  { id: "inventory", label: "Inventory", icon: Boxes },
-  { id: "reports", label: "Reports", icon: LineChart },
-  { id: "projects", label: "Workflows", icon: FolderKanban },
+// Base nav items (all authenticated users)
+const BASE_NAV_ITEMS = [
+  { id: "dashboard", label: "Overview",   icon: LayoutDashboard, roles: ["admin", "manager", "viewer"] },
+  { id: "catalog",   label: "Catalog",    icon: Package,         roles: ["admin", "manager", "viewer"] },
+  { id: "inventory", label: "Inventory",  icon: Boxes,           roles: ["admin", "manager", "viewer"] },
+  // Phase 2: Suppliers nav item
+  { id: "suppliers", label: "Suppliers",  icon: Truck,           roles: ["admin", "manager"] },
+  // Phase 4: Purchase Orders nav item
+  { id: "orders",    label: "Orders",     icon: ShoppingCart,    roles: ["admin", "manager"] },
+  // Phase 5: Advanced Analytics
+  { id: "reports",   label: "Analytics",  icon: LineChart,       roles: ["admin", "manager", "viewer"] },
+  { id: "projects",  label: "Workflows",  icon: FolderKanban,    roles: ["admin", "manager"] },
+  // Phase 3: Audit trail nav item
+  { id: "audit",     label: "Audit Log",  icon: ClipboardList,   roles: ["admin", "manager"] },
+  // PHASE 8: Users tab — admin only
+  { id: "users",     label: "Users",      icon: Users,           roles: ["admin"] },
 ];
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  // PHASE 8: get user role for filtering nav items
+  const { user } = useAuth();
+  const userRole = user?.role ?? "viewer";
+
+  // Filter nav items based on role
+  const navItems = BASE_NAV_ITEMS.filter((item) =>
+    item.roles.includes(userRole)
+  );
 
   return (
     <aside
@@ -81,21 +104,27 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         </div>
       </div>
 
-      {/* Bottom CTA */}
-      <div className={`${collapsed ? "p-4" : "p-6"}`}>
-        {collapsed ? (
+      {/* Bottom: UserMenu + version badge */}
+      <div className={`${collapsed ? "p-4" : "p-6"} space-y-3`}>
+        {/* PHASE 8 START: UserMenu in sidebar bottom */}
+        <UserMenu collapsed={collapsed} />
+        {/* PHASE 8 END: UserMenu */}
+
+        {!collapsed && (
+          <div className="ambient-card rounded-3xl p-4">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#52525b]">Obsidian v1.0</p>
+            <p className="text-xs text-[#71717a] mt-2">Premium Inventory Suite</p>
+          </div>
+        )}
+        {collapsed && (
           <div className="flex justify-center">
             <div className="w-12 h-12 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center">
               <Image src="/images/logobg.png" alt="Obsidian" width={28} height={28} className="object-contain opacity-40" />
             </div>
-          </div>
-        ) : (
-          <div className="ambient-card rounded-3xl p-4">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[#52525b]">Obsidian v1.0</p>
-            <p className="text-xs text-[#71717a] mt-2">Premium Inventory Suite</p>
           </div>
         )}
       </div>
     </aside>
   );
 }
+// PHASE 8 END: Sidebar

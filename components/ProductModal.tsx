@@ -1,7 +1,14 @@
 "use client";
 
+// Phase 2 — components/ProductModal.tsx
+// Modified: added supplier dropdown, cost_price, lead_days fields
+// PHASE 7 MODIFICATION: added ImageGallery section for existing products
+
 import { useState, useEffect } from "react";
 import { Product, ProductFormData } from "@/lib/types";
+// PHASE 7 IMPLEMENTATION START
+import ImageGallery from "@/components/ImageGallery";
+// PHASE 7 IMPLEMENTATION END
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -9,6 +16,8 @@ interface ProductModalProps {
   onSubmit: (data: ProductFormData) => void;
   product?: Product | null;
   loading?: boolean;
+  // Phase 2: called after product save to link supplier if selected
+  onSupplierLink?: (productId: number, supplierId: number, costPrice: number, leadDays: number) => void;
 }
 
 const CATEGORIES = [
@@ -44,9 +53,17 @@ export default function ProductModal({
   onSubmit,
   product,
   loading,
+  onSupplierLink,
 }: ProductModalProps) {
   const [form, setForm] = useState<ProductFormData>(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Phase 2: supplier selection state
+  const [suppliers, setSuppliers] = useState<{ id: number; name: string }[]>([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
+  const [costPrice, setCostPrice] = useState<string>("");
+  const [leadDays, setLeadDays] = useState<string>("7");
+  const [supplierError, setSupplierError] = useState<string>("");
 
   useEffect(() => {
     if (product) {
@@ -66,6 +83,11 @@ export default function ProductModal({
       setForm(emptyForm);
     }
     setErrors({});
+    // Reset supplier fields on open
+    setSelectedSupplierId("");
+    setCostPrice("");
+    setLeadDays("7");
+    setSupplierError("");
   }, [product, isOpen]);
 
   const validate = (): boolean => {
@@ -85,14 +107,37 @@ export default function ProductModal({
     )
       newErrors.rating = "Rating must be between 0 and 5";
 
+    // Phase 2: validate supplier fields if a supplier is selected
+    if (selectedSupplierId) {
+      if (costPrice === "" || isNaN(Number(costPrice)) || Number(costPrice) < 0) {
+        setSupplierError("Cost price must be a non-negative number");
+        return false;
+      }
+    }
+    setSupplierError("");
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // Phase 2: fetch active suppliers for dropdown
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    fetch("/api/suppliers?status=active&limit=100&sortBy=name&sortOrder=asc")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data.suppliers) setSuppliers(data.suppliers);
+      })
+      .catch(() => { /* non-fatal: supplier dropdown just stays empty */ });
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
       onSubmit(form);
+      // Phase 2: supplier linking is handled by the parent after product ID is known
     }
   };
 
@@ -320,6 +365,82 @@ export default function ProductModal({
                 />
               </div>
             </div>
+
+            {/* Phase 2: Supplier section */}
+            <div className="pt-1 border-t border-[#1c2333]">
+              <p className="text-xs uppercase tracking-wider text-[#71717a] mb-3 pt-2">Supplier (optional)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-white mb-1.5">Primary Supplier</label>
+                  <select
+                    value={selectedSupplierId}
+                    onChange={(e) => setSelectedSupplierId(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white appearance-none cursor-pointer"
+                  >
+                    <option value="">— No supplier —</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-white mb-1.5">Cost Price ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={costPrice}
+                    onChange={(e) => { setCostPrice(e.target.value); setSupplierError(""); }}
+                    placeholder="0.00"
+                    disabled={!selectedSupplierId}
+                    className={`w-full px-4 py-2.5 rounded-xl border ${
+                      supplierError ? "border-red-500/50 bg-red-500/10" : "border-[#1c2333]"
+                    } text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085] disabled:opacity-40`}
+                  />
+                  {supplierError && <p className="text-xs text-red-500 mt-1">{supplierError}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-white mb-1.5">Lead Days</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={leadDays}
+                    onChange={(e) => setLeadDays(e.target.value)}
+                    placeholder="7"
+                    disabled={!selectedSupplierId}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085] disabled:opacity-40"
+                  />
+                </div>
+              </div>
+              {selectedSupplierId && onSupplierLink && (
+                <p className="text-xs text-[#71717a] mt-2">
+                  Supplier will be linked as primary when the product is saved.
+                </p>
+              )}
+            </div>
+
+            {/* PHASE 7 IMPLEMENTATION START — Product Images (edit mode only) */}
+            {isEditing && product?.id && (
+              <div className="pt-1 border-t border-[#1c2333]">
+                <p className="text-xs uppercase tracking-wider text-[#71717a] mb-3 pt-2">
+                  Product Images
+                </p>
+                <ImageGallery
+                  productId={product.id}
+                  onPrimaryChanged={(url) => {
+                    if (url) handleChange("image_url", url);
+                  }}
+                />
+              </div>
+            )}
+            {!isEditing && (
+              <div className="pt-1 border-t border-[#1c2333]">
+                <p className="text-xs text-[#52525b] pt-2">
+                  💡 Save the product first, then re-open it to upload product images.
+                </p>
+              </div>
+            )}
+            {/* PHASE 7 IMPLEMENTATION END */}
 
           </div>
 

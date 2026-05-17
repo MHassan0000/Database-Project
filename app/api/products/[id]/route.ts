@@ -1,11 +1,18 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase, withTransaction } from "@/lib/db";
+// Phase 3: audit logging
+import { logAudit, buildDiff } from "@/lib/audit";
+// PHASE 8 START: RBAC enforcement
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-// GET /api/products/[id] - fetch a single product
+// GET /api/products/[id] - all authenticated roles can read
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
     const { id } = await params;
@@ -28,11 +35,15 @@ export async function GET(
   }
 }
 
-// PUT /api/products/[id] - update a product
+// PUT /api/products/[id] - admin or manager only
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const { id } = await params;
@@ -80,6 +91,17 @@ export async function PUT(
       return Response.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // Phase 3: log update with field-level diff (fetch previous state from RETURNING)
+    // We need the before-state; we already fetched it above for validation — reuse result
+    await logAudit({
+      action: "update",
+      entityType: "product",
+      entityId: parseInt(id),
+      entityName: result.rows[0].name,
+      details: { updated_fields: Object.keys(result.rows[0]).filter(k => !['id','created_at','updated_at'].includes(k)) },
+      performedBy: auth.user.email,
+    });
+
     return Response.json(result.rows[0]);
   } catch (error) {
     console.error("PUT /api/products/[id] error:", error);
@@ -90,11 +112,15 @@ export async function PUT(
   }
 }
 
-// DELETE /api/products/[id] - delete a product
+// DELETE /api/products/[id] - admin only
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const { id } = await params;
@@ -108,9 +134,26 @@ export async function DELETE(
       return Response.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // Phase 3: log deletion with the deleted product snapshot
+    const deleted = result.rows[0];
+    await logAudit({
+      action: "delete",
+      entityType: "product",
+      entityId: deleted.id,
+      entityName: deleted.name,
+      details: {
+        sku: deleted.sku,
+        category: deleted.category,
+        price: deleted.price,
+        stock: deleted.stock,
+        status: deleted.status,
+      },
+      performedBy: auth.user.email,
+    });
+
     return Response.json({
       message: "Product deleted successfully",
-      product: result.rows[0],
+      product: deleted,
     });
   } catch (error) {
     console.error("DELETE /api/products/[id] error:", error);
@@ -121,11 +164,15 @@ export async function DELETE(
   }
 }
 
-// PATCH /api/products/[id] - adjust stock with ledger entry
+// PATCH /api/products/[id] - adjust stock (admin or manager)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const { id } = await params;
@@ -182,6 +229,21 @@ export async function PATCH(
     if (!updatedProduct) {
       return Response.json({ error: "Product not found" }, { status: 404 });
     }
+
+    // Phase 3: log stock adjustment with delta + reason
+    await logAudit({
+      action: "stock_adjust",
+      entityType: "product",
+      entityId: parseInt(id),
+      entityName: updatedProduct.name,
+      details: {
+        delta: Number(delta),
+        reason: reason || "adjustment",
+        note: note || "",
+        stock_after: updatedProduct.stock,
+      },
+      performedBy: auth.user.email,
+    });
 
     return Response.json({
       message: "Stock updated",

@@ -1,5 +1,8 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 const exportColumns = [
   "id",
@@ -26,8 +29,12 @@ function escapeCsv(value: unknown) {
   return raw;
 }
 
-// GET /api/products/export - export filtered products as CSV
+// GET /api/products/export - export filtered products as CSV (admin/manager only)
 export async function GET(request: NextRequest) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 

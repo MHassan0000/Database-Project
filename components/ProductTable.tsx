@@ -15,13 +15,16 @@ import {
   Sparkles,
   CarFront,
   Package,
+  Truck,
 } from "lucide-react";
 
 interface ProductTableProps {
   products: Product[];
   loading: boolean;
-  onEdit: (product: Product) => void;
-  onDelete: (product: Product) => void;
+  // PHASE 8 START: optional callbacks — undefined when role lacks permission
+  onEdit?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
+  // PHASE 8 END
   onSelectChange?: (ids: number[]) => void;
   onAdjustStock?: (product: Product) => void;
 }
@@ -137,6 +140,8 @@ function SkeletonRow() {
       <td className="px-4 py-4 hidden md:table-cell"><div className="w-20 h-6 skeleton rounded-lg" /></td>
       <td className="px-4 py-4 hidden lg:table-cell"><div className="w-16 h-4 skeleton" /></td>
       <td className="px-4 py-4 hidden lg:table-cell"><div className="w-16 h-6 skeleton rounded-lg" /></td>
+      {/* Phase 2: supplier skeleton cell */}
+      <td className="px-4 py-4 hidden xl:table-cell"><div className="w-24 h-4 skeleton rounded" /></td>
       <td className="px-4 py-4"><div className="w-20 h-8 skeleton rounded-lg" /></td>
     </tr>
   );
@@ -191,6 +196,8 @@ export default function ProductTable({
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden md:table-cell">Stock</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">Rating</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">Status</th>
+                {/* Phase 2: supplier column header in skeleton */}
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden xl:table-cell">Supplier</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -255,9 +262,11 @@ export default function ProductTable({
               <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden lg:table-cell">
                 Status
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">
-                Actions
+              {/* Phase 2: Primary supplier column */}
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider hidden xl:table-cell">
+                Supplier
               </th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#8b93a7] uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="stagger-children">
@@ -280,11 +289,20 @@ export default function ProductTable({
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#18181b] flex items-center justify-center text-white shrink-0 overflow-hidden border border-[#27272a]">
-                      {product.image_url ? (
+                      {/* PHASE 7 IMPLEMENTATION START — prefer uploaded thumbnail, then image_url, then icon */}
+                      {product.primary_thumbnail_url ? (
+                        <img
+                          src={product.primary_thumbnail_url}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : product.image_url ? (
                         <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                       ) : (
                         <CategoryIcon category={product.category} />
                       )}
+                      {/* PHASE 7 IMPLEMENTATION END */}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-white truncate max-w-50">
@@ -330,6 +348,18 @@ export default function ProductTable({
                   <StatusBadge status={product.status || "active"} />
                 </td>
 
+                {/* Phase 2: Primary Supplier */}
+                <td className="px-4 py-3.5 hidden xl:table-cell">
+                  {(product as Product & { primary_supplier_name?: string }).primary_supplier_name ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[#a1a1aa]">
+                      <Truck className="w-3 h-3 text-[#71717a]" />
+                      {(product as Product & { primary_supplier_name?: string }).primary_supplier_name}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[#52525b]">—</span>
+                  )}
+                </td>
+
                 {/* Actions */}
                 <td className="px-4 py-3.5">
                   <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -345,26 +375,33 @@ export default function ProductTable({
                         </svg>
                       </button>
                     )}
-                    <button
-                      onClick={() => onEdit(product)}
-                      className="p-2 rounded-lg hover:bg-[#27272a] text-[#a1a1aa] hover:text-white transition-all"
-                      title="Edit"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => onDelete(product)}
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all"
-                      title="Delete"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </button>
+                    {/* PHASE 8 START: guard Edit — hidden for viewers */}
+                    {onEdit && (
+                      <button
+                        onClick={() => onEdit(product)}
+                        className="p-2 rounded-lg hover:bg-[#27272a] text-[#a1a1aa] hover:text-white transition-all"
+                        title="Edit"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    )}
+                    {/* PHASE 8 START: guard Delete — admin only */}
+                    {onDelete && (
+                      <button
+                        onClick={() => onDelete(product)}
+                        className="p-2 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all"
+                        title="Delete"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    )}
+                    {/* PHASE 8 END */}
                   </div>
                 </td>
               </tr>

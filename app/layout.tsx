@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+// PHASE 8 START: AuthProvider wraps the entire application
+import { AuthProvider } from "@/components/AuthProvider";
+// PHASE 8 END: AuthProvider import
 
 const plex = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -29,7 +32,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`h-full ${plex.variable} ${fraunces.variable}`}>
       <body className={`min-h-full flex flex-col bg-background text-foreground antialiased ${plex.className}`}>
-        {children}
+        {/* PHASE 8 START: global auth context */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+        {/* PHASE 8 END: global auth context */}
       </body>
     </html>
   );

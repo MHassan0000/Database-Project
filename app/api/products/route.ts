@@ -1,8 +1,17 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// Phase 3: audit logging
+import { logAudit } from "@/lib/audit";
+// PHASE 8 START: role-based access control
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-// GET /api/products - fetch all products with optional filters, search, sort, pagination
+// GET /api/products - fetch all products (all authenticated roles)
 export async function GET(request: NextRequest) {
+  // PHASE 8 START: require authenticated session (any role)
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -54,10 +63,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
+      // FIX: use ILIKE for substring matching so partial SKU searches (e.g. "REG-U")
+      // work correctly. plainto_tsquery was splitting on hyphens and breaking SKU search.
+      const likePattern = `%${search.replace(/[%_\\]/g, "\\$&")}%`;
       conditions.push(
-        `to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(brand, '') || ' ' || coalesce(sku, '')) @@ plainto_tsquery('simple', $${paramIndex})`
+        `(name ILIKE $${paramIndex} OR sku ILIKE $${paramIndex} OR brand ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`
       );
-      values.push(search);
+      values.push(likePattern);
       paramIndex++;
     }
 
@@ -89,10 +101,19 @@ export async function GET(request: NextRequest) {
     const total = parseInt(countResult.rows[0].count);
 
     // Fetch products
+    // PHASE 7 IMPLEMENTATION START — include primary image fields via correlated subqueries
     const productsResult = await query(
-      `SELECT * FROM products ${whereClause} ORDER BY ${safeSortBy} ${safeSortOrder} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      `SELECT p.*,
+              (SELECT pi.url FROM product_images pi
+               WHERE pi.product_id = p.id AND pi.is_primary = true
+               ORDER BY pi.sort_order ASC LIMIT 1) AS primary_image_url,
+              (SELECT pi.thumbnail_url FROM product_images pi
+               WHERE pi.product_id = p.id AND pi.is_primary = true
+               ORDER BY pi.sort_order ASC LIMIT 1) AS primary_thumbnail_url
+       FROM products p ${whereClause} ORDER BY p.${safeSortBy} ${safeSortOrder} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...values, limit, offset]
     );
+    // PHASE 7 IMPLEMENTATION END
 
     return Response.json({
       products: productsResult.rows,
@@ -110,8 +131,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/products - create a new product
+// POST /api/products - create a new product (admin or manager only)
 export async function POST(request: NextRequest) {
+  // PHASE 8 START: require admin or manager role
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -157,6 +182,23 @@ export async function POST(request: NextRequest) {
         status || "active",
       ]
     );
+
+    // Phase 3: log product creation to audit trail
+    await logAudit({
+      action: "create",
+      entityType: "product",
+      entityId: result.rows[0].id,
+      entityName: result.rows[0].name,
+      details: {
+        sku: result.rows[0].sku,
+        price: result.rows[0].price,
+        stock: result.rows[0].stock,
+        category: result.rows[0].category,
+        status: result.rows[0].status,
+      },
+      // PHASE 8: use authenticated user's email for audit trail
+      performedBy: auth.user.email,
+    });
 
     return Response.json(result.rows[0], { status: 201 });
   } catch (error) {
