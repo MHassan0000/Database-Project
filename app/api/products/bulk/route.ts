@@ -2,9 +2,16 @@ import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
 // Phase 3: audit logging
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START: bulk operations are admin-only
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-// PATCH /api/products/bulk - update status for multiple products
+// PATCH /api/products/bulk - bulk status update (admin only)
 export async function PATCH(request: NextRequest) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const body = await request.json();
@@ -41,8 +48,12 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// DELETE /api/products/bulk - delete multiple products
+// DELETE /api/products/bulk - admin only
 export async function DELETE(request: NextRequest) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const body = await request.json();
@@ -62,7 +73,7 @@ export async function DELETE(request: NextRequest) {
       action: "bulk_delete",
       entityType: "product",
       details: { ids, count: result.rowCount },
-      performedBy: "system",
+      performedBy: auth.user.email,
     });
 
     return Response.json({ deleted: result.rowCount });

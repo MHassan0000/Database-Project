@@ -1,5 +1,5 @@
 // Phase 4 — app/api/purchase-orders/[id]/status/route.ts
-// PATCH /api/purchase-orders/[id]/status
+// PATCH /api/purchase-orders/[id]/status (admin/manager)
 // Allowed transitions:
 //   draft      → sent | cancelled
 //   sent       → cancelled
@@ -11,6 +11,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
 import { PurchaseOrderStatus } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -26,6 +29,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: RouteContext
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -87,7 +94,7 @@ export async function PATCH(
       entityId: poId,
       entityName: `PO #${poId}`,
       details: { old_status: currentStatus, new_status: newStatus },
-      performedBy: "system",
+      performedBy: auth.user.email,
     });
 
     return NextResponse.json(updated.rows[0]);

@@ -1,14 +1,15 @@
 // Phase 7 — app/api/products/[id]/images/[imageId]/route.ts
-// PATCH  — update alt_text / sort_order / is_primary
-// DELETE — remove image record + physical files from disk
+// PATCH  — update alt_text / sort_order / is_primary (admin/manager)
+// DELETE — remove image record + physical files from disk (admin/manager)
 
 import { type NextRequest, NextResponse } from "next/server";
 import { join } from "path";
 import { promises as fs } from "fs";
 import { query, initializeDatabase } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
-
-// PHASE 7 IMPLEMENTATION START
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 const UPLOADS_DIR = join(process.cwd(), "public", "uploads", "products");
 
@@ -33,6 +34,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; imageId: string }> }
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const { id, imageId } = await params;
@@ -100,9 +105,13 @@ export async function PATCH(
 // ── DELETE ────────────────────────────────────────────────────────────────────
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; imageId: string }> }
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const { id, imageId } = await params;

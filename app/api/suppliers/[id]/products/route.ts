@@ -1,14 +1,19 @@
 // Phase 2 — app/api/suppliers/[id]/products/route.ts
-// POST /api/suppliers/[id]/products — link a product to this supplier
+// POST /api/suppliers/[id]/products — link a product to this supplier (admin/manager)
 
 import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
 import { ProductSupplierFormData } from "@/lib/types";
+// PHASE 8 FIX START: RBAC guard
+import { requireRole } from "@/lib/auth";
+// PHASE 8 FIX END
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 

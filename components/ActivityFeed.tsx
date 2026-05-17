@@ -58,11 +58,16 @@ export default function ActivityFeed() {
   const [error, setError]       = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
+  const [restricted, setRestricted] = useState(false);
+
   const fetchActivity = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setRestricted(false);
     try {
-      const res = await fetch("/api/audit/stats");
+      const res = await fetch("/api/audit/stats", { credentials: "include" });
+      // PHASE 8 FIX: distinguish 403 (permission) from real errors
+      if (res.status === 403) { setRestricted(true); return; }
       if (!res.ok) throw new Error("Failed to load activity");
       const data = await res.json();
       setEntries(data.recentActivity ?? []);
@@ -73,6 +78,7 @@ export default function ActivityFeed() {
       setLoading(false);
     }
   }, []);
+
 
   useEffect(() => { fetchActivity(); }, [fetchActivity]);
 
@@ -107,11 +113,19 @@ export default function ActivityFeed() {
             </div>
           ))}
         </div>
+      ) : restricted ? (
+        <div className="flex items-center gap-2 text-xs text-[#52525b] py-4">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          Activity log requires Manager or Admin access.
+        </div>
       ) : error ? (
         <div className="flex items-center gap-2 text-xs text-red-400 py-4">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
+
       ) : entries.length === 0 ? (
         <div className="py-8 text-center text-xs text-[#71717a]">
           No activity recorded yet. Create or update products and suppliers to see the trail.

@@ -16,6 +16,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase, withTransaction } from "@/lib/db";
 import { PurchaseOrderItemReceive } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -23,6 +26,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: RouteContext
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 

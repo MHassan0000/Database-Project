@@ -1,6 +1,6 @@
 // Phase 2 — app/api/suppliers/route.ts
-// GET  /api/suppliers  — paginated list with search, sort, filter
-// POST /api/suppliers  — create a new supplier
+// GET  /api/suppliers  — paginated list with search, sort, filter (admin/manager)
+// POST /api/suppliers  — create a new supplier (admin/manager)
 // Phase 3: logAudit integrated into POST
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,9 +9,16 @@ import { initializeDatabase } from "@/lib/db";
 import { SupplierFormData } from "@/lib/types";
 // Phase 3: audit logging
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 // ── GET /api/suppliers ────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -89,6 +96,10 @@ export async function GET(request: NextRequest) {
 
 // ── POST /api/suppliers ───────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 

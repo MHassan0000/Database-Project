@@ -1,12 +1,17 @@
 // Phase 4 — app/api/reorder-suggestions/route.ts
-// GET /api/reorder-suggestions
+// GET /api/reorder-suggestions (admin/manager)
 // Products where stock <= reorder_point, joined with their primary supplier.
 // Used by ReorderSuggestions.tsx on the Orders tab.
 
 import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 FIX START: RBAC guard
+import { requireRole } from "@/lib/auth";
+// PHASE 8 FIX END
 
 export async function GET(request: NextRequest) {
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 

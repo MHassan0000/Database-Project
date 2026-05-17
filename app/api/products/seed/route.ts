@@ -1,7 +1,13 @@
 import { query, initializeDatabase } from "@/lib/db";
+import { type NextRequest } from "next/server";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-// POST /api/products/seed - seed database with sample products
-export async function POST() {
+// POST /api/products/seed - seed database with sample products (admin only)
+export async function POST(request: NextRequest) {
+  const auth = await requireRole(request, ["admin"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 

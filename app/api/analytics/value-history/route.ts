@@ -1,20 +1,19 @@
 // Phase 5 — app/api/analytics/value-history/route.ts
-// GET /api/analytics/value-history?period=90d
-//
-// Reconstructs approximate inventory value over time by taking the LAST
-// stock_after × price snapshot for each product per day, summed across all
-// products. Also returns the live current total value.
-// Supported periods: 7d | 14d | 30d | 60d | 90d
+// GET /api/analytics/value-history?period=90d (all authenticated roles)
 
 import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 FIX START: RBAC guard
+import { requireRole } from "@/lib/auth";
+// PHASE 8 FIX END
 
-// PHASE 5 IMPLEMENTATION START
 const PERIOD_MAP: Record<string, number> = {
   "7d": 7, "14d": 14, "30d": 30, "60d": 60, "90d": 90,
 };
 
 export async function GET(request: NextRequest) {
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 

@@ -1,7 +1,13 @@
 import { query, initializeDatabase } from "@/lib/db";
+import { type NextRequest } from "next/server";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-// GET /api/products/stats - fetch statistics and reports
-export async function GET() {
+// GET /api/products/stats (all authenticated roles)
+export async function GET(request: NextRequest) {
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 

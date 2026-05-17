@@ -1,7 +1,7 @@
 // Phase 2 — app/api/suppliers/[id]/route.ts
-// GET    /api/suppliers/[id] — get single supplier with linked products
-// PUT    /api/suppliers/[id] — update supplier
-// DELETE /api/suppliers/[id] — delete supplier (blocked if active POs exist)
+// GET    /api/suppliers/[id] — get single supplier with linked products (admin/manager)
+// PUT    /api/suppliers/[id] — update supplier (admin/manager)
+// DELETE /api/suppliers/[id] — delete supplier (admin only)
 // Phase 3: logAudit integrated into PUT and DELETE
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,12 +9,19 @@ import { query, initializeDatabase } from "@/lib/db";
 import { SupplierFormData } from "@/lib/types";
 // Phase 3: audit logging
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 // ── GET /api/suppliers/[id] ───────────────────────────────────────────────────
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -75,6 +82,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -152,7 +163,7 @@ export async function PUT(
         rating: updated.rating,
         email: updated.email,
       },
-      performedBy: "system",
+      performedBy: auth.user.email,
     });
 
     return NextResponse.json(updated);
@@ -167,9 +178,13 @@ export async function PUT(
 
 // ── DELETE /api/suppliers/[id] ────────────────────────────────────────────────
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 8 START: delete is admin-only
+  const auth = await requireRole(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 

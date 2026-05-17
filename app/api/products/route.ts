@@ -2,9 +2,16 @@ import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
 // Phase 3: audit logging
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START: role-based access control
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-// GET /api/products - fetch all products with optional filters, search, sort, pagination
+// GET /api/products - fetch all products (all authenticated roles)
 export async function GET(request: NextRequest) {
+  // PHASE 8 START: require authenticated session (any role)
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -56,10 +63,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
+      // FIX: use ILIKE for substring matching so partial SKU searches (e.g. "REG-U")
+      // work correctly. plainto_tsquery was splitting on hyphens and breaking SKU search.
+      const likePattern = `%${search.replace(/[%_\\]/g, "\\$&")}%`;
       conditions.push(
-        `to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(brand, '') || ' ' || coalesce(sku, '')) @@ plainto_tsquery('simple', $${paramIndex})`
+        `(name ILIKE $${paramIndex} OR sku ILIKE $${paramIndex} OR brand ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`
       );
-      values.push(search);
+      values.push(likePattern);
       paramIndex++;
     }
 
@@ -121,8 +131,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/products - create a new product
+// POST /api/products - create a new product (admin or manager only)
 export async function POST(request: NextRequest) {
+  // PHASE 8 START: require admin or manager role
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -182,7 +196,8 @@ export async function POST(request: NextRequest) {
         category: result.rows[0].category,
         status: result.rows[0].status,
       },
-      performedBy: "system",
+      // PHASE 8: use authenticated user's email for audit trail
+      performedBy: auth.user.email,
     });
 
     return Response.json(result.rows[0], { status: 201 });

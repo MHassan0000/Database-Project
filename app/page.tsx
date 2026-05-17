@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Product, ProductFormData, PaginatedResponse } from "@/lib/types";
 import { ToastProvider, useToast } from "@/components/Toast";
 import Navbar from "@/components/Navbar";
@@ -38,11 +39,26 @@ import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
 // PHASE 6 IMPLEMENTATION START
 import ImportModal from "@/components/ImportModal";
 // PHASE 6 IMPLEMENTATION END
-import { Database, ClipboardList, ShoppingCart } from "lucide-react";
+// PHASE 8 START: auth context + user management component
+import { useAuth } from "@/components/AuthProvider";
+import UserManagement from "@/components/UserManagement";
+// PHASE 8 END: imports
+import { Database, Loader2 } from "lucide-react";
 
 function Dashboard() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  // PHASE 8 START: authentication guard — redirect to /login if not authenticated
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/login");
+    }
+  }, [user, authLoading, router]);
+  // PHASE 8 END: auth guard
 
   // Products state
   const [data, setData] = useState<PaginatedResponse>({
@@ -419,6 +435,20 @@ function Dashboard() {
     }
   };
 
+  // PHASE 8 START: auth loading state — show spinner while auth resolves
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#52525b] animate-spin-slow" />
+      </div>
+    );
+  }
+
+  // Role helpers for RBAC
+  const isAdmin   = user.role === "admin";
+  const isMgr     = user.role === "admin" || user.role === "manager";
+  // PHASE 8 END: auth loading state
+
   return (
     <div className="min-h-screen bg-transparent">
       <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
@@ -482,10 +512,24 @@ function Dashboard() {
 
             <InsightsPanel products={data.products} />
 
-            {/* Phase 3: Activity feed on dashboard Overview */}
-            <ActivityFeed />
+            {/* Phase 3: Activity feed on dashboard Overview — PHASE 8 FIX: admin/manager only */}
+            {isMgr ? (
+              <ActivityFeed />
+            ) : (
+              /* Viewer-friendly placeholder instead of a 403 error */
+              <div className="ambient-card rounded-3xl p-6 flex items-center gap-4 text-[#52525b]">
+                <svg className="w-5 h-5 flex-shrink-0 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-[#71717a]">Recent Activity</p>
+                  <p className="text-xs">Audit log access requires Manager or Admin role.</p>
+                </div>
+              </div>
+            )}
 
-            <QuickActions />
+
+
 
             <BulkActions
               selectedCount={selectedIds.length}
@@ -525,20 +569,20 @@ function Dashboard() {
               totalProducts={data.total}
             />
 
-            {/* Table */}
+            {/* Table — PHASE 8: pass role flags so table can hide restricted actions */}
             <ProductTable
               products={data.products}
               loading={loading}
               onSelectChange={setSelectedIds}
-              onAdjustStock={(product) => {
+              onAdjustStock={isMgr ? (product) => {
                 setStockAdjustProductId(product.id);
                 setStockAdjustOpen(true);
-              }}
-              onEdit={(product) => {
+              } : undefined}
+              onEdit={isMgr ? (product) => {
                 setEditingProduct(product);
                 setModalOpen(true);
-              }}
-              onDelete={(product) => setDeleteProduct(product)}
+              } : undefined}
+              onDelete={isAdmin ? (product) => setDeleteProduct(product) : undefined}
             />
 
             {/* Pagination */}
@@ -637,19 +681,20 @@ function Dashboard() {
               onDelete={bulkDelete}
               loading={bulkLoading}
             />
+            {/* PHASE 8: role-gated actions in catalog tab */}
             <ProductTable
               products={data.products}
               loading={loading}
               onSelectChange={setSelectedIds}
-              onAdjustStock={(product) => {
+              onAdjustStock={isMgr ? (product) => {
                 setStockAdjustProductId(product.id);
                 setStockAdjustOpen(true);
-              }}
-              onEdit={(product) => {
+              } : undefined}
+              onEdit={isMgr ? (product) => {
                 setEditingProduct(product);
                 setModalOpen(true);
-              }}
-              onDelete={(product) => setDeleteProduct(product)}
+              } : undefined}
+              onDelete={isAdmin ? (product) => setDeleteProduct(product) : undefined}
             />
             <Pagination
               page={data.page}
@@ -753,7 +798,7 @@ function Dashboard() {
                 Design and monitor operational flows across catalog, stock, and channels.
               </p>
             </div>
-            <QuickActions />
+            <QuickActions onImportClick={() => setImportModalOpen(true)} onTabChange={setActiveTab} />
             <InsightsPanel products={data.products} />
           </div>
         )}
@@ -807,6 +852,22 @@ function Dashboard() {
             />
           </div>
         )}
+
+        {/* PHASE 8 START: Users tab — admin only */}
+        {activeTab === "users" && isAdmin && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="space-y-2">
+              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
+                User Management
+              </h2>
+              <p className="text-sm sm:text-base text-muted max-w-2xl">
+                Manage system accounts, assign roles, and control access permissions.
+              </p>
+            </div>
+            <UserManagement />
+          </div>
+        )}
+        {/* PHASE 8 END: Users tab */}
 
         {/* Phase 3: Audit Log tab */}
         {activeTab === "audit" && (

@@ -1,6 +1,6 @@
 // Phase 7 — app/api/products/[id]/images/route.ts
-// GET  /api/products/[id]/images — list all images for a product
-// POST /api/products/[id]/images — upload a new image (multipart/form-data, field name: "file")
+// GET  /api/products/[id]/images — list all images (all roles)
+// POST /api/products/[id]/images — upload a new image (admin/manager)
 
 import { type NextRequest, NextResponse } from "next/server";
 import { join } from "path";
@@ -8,6 +8,9 @@ import { promises as fs } from "fs";
 import sharp from "sharp";
 import { query, initializeDatabase } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 // PHASE 7 IMPLEMENTATION START
 
@@ -28,9 +31,13 @@ async function ensureUploadsDir(): Promise<void> {
 // ── GET — list images ────────────────────────────────────────────────────────
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 8 START: all authenticated roles can view images
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const { id } = await params;
@@ -65,6 +72,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PHASE 8 START: upload is admin/manager only
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
     const { id } = await params;

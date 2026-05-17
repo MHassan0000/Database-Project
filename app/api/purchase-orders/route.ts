@@ -1,14 +1,21 @@
 // Phase 4 — app/api/purchase-orders/route.ts
-// GET  /api/purchase-orders — paginated list with filters
-// POST /api/purchase-orders — create PO with line items (transactional)
+// GET  /api/purchase-orders — paginated list with filters (admin/manager)
+// POST /api/purchase-orders — create PO with line items (admin/manager)
 
 import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase, withTransaction } from "@/lib/db";
 import { PurchaseOrderFormData } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 // ── GET /api/purchase-orders ──────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -105,6 +112,10 @@ export async function GET(request: NextRequest) {
 
 // ── POST /api/purchase-orders ─────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 

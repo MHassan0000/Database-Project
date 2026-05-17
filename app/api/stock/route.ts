@@ -1,8 +1,13 @@
 import { type NextRequest } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-// GET /api/stock - stock movement ledger
+// GET /api/stock - stock movement ledger (admin/manager/viewer)
 export async function GET(request: NextRequest) {
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 

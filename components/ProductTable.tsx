@@ -21,8 +21,10 @@ import {
 interface ProductTableProps {
   products: Product[];
   loading: boolean;
-  onEdit: (product: Product) => void;
-  onDelete: (product: Product) => void;
+  // PHASE 8 START: optional callbacks — undefined when role lacks permission
+  onEdit?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
+  // PHASE 8 END
   onSelectChange?: (ids: number[]) => void;
   onAdjustStock?: (product: Product) => void;
 }
@@ -373,26 +375,33 @@ export default function ProductTable({
                         </svg>
                       </button>
                     )}
-                    <button
-                      onClick={() => onEdit(product)}
-                      className="p-2 rounded-lg hover:bg-[#27272a] text-[#a1a1aa] hover:text-white transition-all"
-                      title="Edit"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => onDelete(product)}
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all"
-                      title="Delete"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </button>
+                    {/* PHASE 8 START: guard Edit — hidden for viewers */}
+                    {onEdit && (
+                      <button
+                        onClick={() => onEdit(product)}
+                        className="p-2 rounded-lg hover:bg-[#27272a] text-[#a1a1aa] hover:text-white transition-all"
+                        title="Edit"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    )}
+                    {/* PHASE 8 START: guard Delete — admin only */}
+                    {onDelete && (
+                      <button
+                        onClick={() => onDelete(product)}
+                        className="p-2 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all"
+                        title="Delete"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    )}
+                    {/* PHASE 8 END */}
                   </div>
                 </td>
               </tr>

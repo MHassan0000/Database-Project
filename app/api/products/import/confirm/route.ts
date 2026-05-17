@@ -10,10 +10,17 @@ import { withTransaction, initializeDatabase } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import type { ImportRow } from "@/lib/types";
 import type { PoolClient } from "pg";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 // PHASE 6 IMPLEMENTATION START
 
 export async function POST(request: NextRequest) {
+  // PHASE 8 START: import is admin/manager only
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 

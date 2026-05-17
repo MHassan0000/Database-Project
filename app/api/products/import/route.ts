@@ -1,11 +1,12 @@
 // Phase 6 — app/api/products/import/route.ts
-// GET  /api/products/import/template — returns a downloadable CSV template file
-// POST /api/products/import          — parses + validates a CSV upload, returns preview
+// GET  /api/products/import/template — returns a downloadable CSV template (admin/manager)
+// POST /api/products/import          — parses + validates a CSV upload, returns preview (admin/manager)
 
 import { type NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
-
-// PHASE 6 IMPLEMENTATION START
+// PHASE 8 FIX START: RBAC guards for import
+import { requireRole } from "@/lib/auth";
+// PHASE 8 FIX END
 
 // ── CSV template ─────────────────────────────────────────────────────────────
 
@@ -203,10 +204,13 @@ function validateRow(
   };
 }
 
-// ── GET — download CSV template ───────────────────────────────────────────────
+// ── GET — download CSV template ─────────────────────────────────────────────
 
-export async function GET() {
-  // PHASE 6: returns a ready-to-fill CSV template
+export async function GET(request: NextRequest) {
+  // PHASE 8 FIX START: guard template download to admin/manager
+  const authCheck = await requireRole(request, ["admin", "manager"]);
+  if (!authCheck.ok) return authCheck.response;
+  // PHASE 8 FIX END
   const csv = buildTemplate();
   return new NextResponse(csv, {
     status: 200,
@@ -217,9 +221,13 @@ export async function GET() {
   });
 }
 
-// ── POST — parse CSV and return validation preview ────────────────────────────
+// ── POST — parse CSV and return validation preview ─────────────────────────────
 
 export async function POST(request: NextRequest) {
+  // PHASE 8 FIX START: guard CSV upload to admin/manager
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 FIX END
   try {
     await initializeDatabase();
 

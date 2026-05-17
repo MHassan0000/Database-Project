@@ -1,20 +1,27 @@
 // Phase 4 — app/api/purchase-orders/[id]/route.ts
-// GET    /api/purchase-orders/[id] — single PO with items + supplier
-// PUT    /api/purchase-orders/[id] — update draft PO
-// DELETE /api/purchase-orders/[id] — delete draft PO only
+// GET    /api/purchase-orders/[id] — single PO with items + supplier (admin/manager)
+// PUT    /api/purchase-orders/[id] — update draft PO (admin/manager)
+// DELETE /api/purchase-orders/[id] — delete draft PO only (admin only)
 
 import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase, withTransaction } from "@/lib/db";
 import { PurchaseOrderFormData } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // ── GET /api/purchase-orders/[id] ────────────────────────────────────────────
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: RouteContext
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -70,6 +77,10 @@ export async function PUT(
   request: NextRequest,
   { params }: RouteContext
 ) {
+  // PHASE 8 START
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 
@@ -190,9 +201,13 @@ export async function PUT(
 // ── DELETE /api/purchase-orders/[id] ─────────────────────────────────────────
 // Only draft POs may be deleted.
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: RouteContext
 ) {
+  // PHASE 8 START: delete is admin-only
+  const auth = await requireRole(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+  // PHASE 8 END
   try {
     await initializeDatabase();
 

@@ -1,10 +1,15 @@
 // Phase 3 — app/api/audit/stats/route.ts
-// GET /api/audit/stats — action-type counts, top actors, recent activity
+// GET /api/audit/stats — action-type counts, top actors (admin/manager)
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 START
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 

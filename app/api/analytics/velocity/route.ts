@@ -1,19 +1,19 @@
 // Phase 5 — app/api/analytics/velocity/route.ts
-// GET /api/analytics/velocity?period=30d&limit=10
-//
-// Returns top N fastest-moving products (by total stock movement units)
-// and a secondary list of dead-stock items (zero movement in the period).
-// Supported periods: 7d | 14d | 30d | 60d | 90d
+// GET /api/analytics/velocity?period=30d&limit=10 (all authenticated roles)
 
 import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 FIX START: RBAC guard
+import { requireRole } from "@/lib/auth";
+// PHASE 8 FIX END
 
-// PHASE 5 IMPLEMENTATION START
 const PERIOD_MAP: Record<string, number> = {
   "7d": 7, "14d": 14, "30d": 30, "60d": 60, "90d": 90,
 };
 
 export async function GET(request: NextRequest) {
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 

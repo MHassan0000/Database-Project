@@ -4,6 +4,9 @@
 
 import { NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 START: use bcryptjs for proper password hashing in seed
+import bcrypt from "bcryptjs";
+// PHASE 8 END
 
 export async function POST() {
   try {
@@ -12,15 +15,19 @@ export async function POST() {
     const results: Record<string, number> = {};
 
     // ── 1. USERS ─────────────────────────────────────────────────────────────
+    // PHASE 8 START: proper bcrypt hashing for demo users
+    const DEMO_PASSWORD = "Pakistan@2024!";
+    const PLACEHOLDER_HASH = "$2b$10$rJ8K2mN4pQwXvY3hL9oZAOqE5tF1gH7iM6nS0kV2bW8cD4eR3uA6y";
+
     const userCount = parseInt((await query("SELECT COUNT(*) FROM users")).rows[0].count);
     if (userCount === 0) {
-      // bcrypt hash for "Pakistan@2024!" — pre-computed so we avoid bcryptjs dependency at seed time
-      const hash = "$2b$10$rJ8K2mN4pQwXvY3hL9oZAOqE5tF1gH7iM6nS0kV2bW8cD4eR3uA6y";
+      // Compute a real bcrypt hash now that bcryptjs is available
+      const hash = await bcrypt.hash(DEMO_PASSWORD, 10);
       const users = [
-        ["Usman Tariq",    "admin@obsidian.pk",    hash, "admin",   true],
-        ["Ayesha Siddiqui","manager@obsidian.pk",  hash, "manager", true],
-        ["Hamza Butt",     "hamza@obsidian.pk",    hash, "viewer",  true],
-        ["Zara Malik",     "zara@obsidian.pk",     hash, "viewer",  true],
+        ["Usman Tariq",     "admin@obsidian.pk",   hash, "admin",   true],
+        ["Ayesha Siddiqui", "manager@obsidian.pk", hash, "manager", true],
+        ["Hamza Butt",      "hamza@obsidian.pk",   hash, "viewer",  true],
+        ["Zara Malik",      "zara@obsidian.pk",    hash, "viewer",  true],
       ];
       for (const u of users) {
         await query(
@@ -30,7 +37,23 @@ export async function POST() {
         );
       }
       results.users = users.length;
+    } else {
+      // PHASE 8: Fix existing seeded users that still have the placeholder hash
+      // by re-hashing them with a valid bcrypt hash so login works.
+      const stale = await query(
+        `SELECT id FROM users WHERE password_hash = $1`,
+        [PLACEHOLDER_HASH]
+      );
+      if (stale.rows.length > 0) {
+        const realHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+        await query(
+          `UPDATE users SET password_hash = $1 WHERE password_hash = $2`,
+          [realHash, PLACEHOLDER_HASH]
+        );
+        results.fixedUserHashes = stale.rows.length;
+      }
     }
+    // PHASE 8 END: user seeding
 
     // ── 2. SUPPLIERS ─────────────────────────────────────────────────────────
     const supCount = parseInt((await query("SELECT COUNT(*) FROM suppliers")).rows[0].count);

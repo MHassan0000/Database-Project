@@ -1,10 +1,15 @@
 // Phase 3 — app/api/audit/route.ts
-// GET /api/audit — paginated, filterable audit log
+// GET /api/audit — paginated, filterable audit log (admin and manager only)
 
 import { NextRequest, NextResponse } from "next/server";
 import { query, initializeDatabase } from "@/lib/db";
+// PHASE 8 START: audit log is restricted to admin and manager
+import { requireRole } from "@/lib/auth";
+// PHASE 8 END
 
 export async function GET(request: NextRequest) {
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
   try {
     await initializeDatabase();
 
