@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   try {
 
     const result = await query(
-      "SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' ORDER BY category ASC"
+      "SELECT DISTINCT category FROM products WHERE tenant_id = $1 AND category IS NOT NULL AND category != '' ORDER BY category ASC",
+      [auth.user.tenant_id]
     );
 
     const categories = result.rows.map(

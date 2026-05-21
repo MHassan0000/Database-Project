@@ -7,6 +7,7 @@
 import { query } from "@/lib/db";
 
 export interface AuditParams {
+  tenantId?: number;
   action: string;         // create | update | delete | stock_adjust | bulk_update | bulk_delete | import | receive_po
   entityType: string;     // product | supplier | purchase_order | user
   entityId?: number | null;
@@ -23,11 +24,16 @@ export interface AuditParams {
  */
 export async function logAudit(params: AuditParams): Promise<void> {
   try {
+    if (params.tenantId == null) {
+      throw new Error("tenantId is required for audit log entries.");
+    }
+
     await query(
       `INSERT INTO audit_log
-         (action, entity_type, entity_id, entity_name, details, performed_by, ip_address)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)`,
+         (tenant_id, action, entity_type, entity_id, entity_name, details, performed_by, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)`,
       [
+        params.tenantId,
         params.action,
         params.entityType,
         params.entityId   ?? null,

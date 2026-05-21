@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 // PHASE 8: UserMenu and auth context
 import UserMenu from "@/components/UserMenu";
@@ -29,7 +30,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       <div className={`${collapsed ? "p-4" : "p-6"} shrink-0`}>
         {/* Header */}
         <div className={`flex items-center ${collapsed ? "flex-col gap-3" : "justify-between"}`}>
-          <div className={`flex items-center ${collapsed ? "flex-col" : "gap-3"}`}>
+          <Link href="/" className={`flex items-center ${collapsed ? "flex-col" : "gap-3"}`}>
             <div className={`${collapsed ? "w-12 h-12" : "w-10 h-10"} rounded-2xl bg-[#18181b] flex items-center justify-center shadow-lg shadow-black/40 border border-[#27272a] overflow-hidden transition-all`}>
               <Image src="/images/logobg.png" alt="Obsidian" width={35} height={35} className="object-contain" priority />
             </div>
@@ -39,7 +40,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 <p className="text-xs text-[#71717a] uppercase tracking-[0.25em]">Inventory</p>
               </div>
             )}
-          </div>
+          </Link>
           <button
             onClick={() => setCollapsed((prev) => !prev)}
             className={`${collapsed ? "w-10 h-10" : "w-9 h-9"} rounded-xl border border-[#27272a] text-[#a1a1aa] hover:text-white hover:bg-[#18181b] transition-colors flex items-center justify-center`}

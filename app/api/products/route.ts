@@ -75,6 +75,9 @@ export async function GET(request: NextRequest) {
 
     const whereClause =
       conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const tenantClause = whereClause
+      ? `${whereClause} AND p.tenant_id = $${paramIndex}`
+      : `WHERE p.tenant_id = $${paramIndex}`;
 
     // Whitelist sort columns
     const allowedSortColumns = [
@@ -97,23 +100,23 @@ export async function GET(request: NextRequest) {
     // PHASE 7 IMPLEMENTATION START — include primary image via LEFT JOIN (faster than correlated subqueries)
     const [countResult, productsResult] = await Promise.all([
       query(
-        `SELECT COUNT(*) FROM products ${whereClause}`,
-        values
+        `SELECT COUNT(*) FROM products p ${tenantClause}`,
+        [...values, auth.user.tenant_id]
       ),
       query(
         `SELECT p.*,
                 pi.url AS primary_image_url,
                 pi.thumbnail_url AS primary_thumbnail_url
          FROM products p
-         LEFT JOIN LATERAL (
-           SELECT url, thumbnail_url FROM product_images
-           WHERE product_id = p.id AND is_primary = true
-           ORDER BY sort_order ASC LIMIT 1
-         ) pi ON true
-         ${whereClause.replace(/products/g, 'products p').length !== whereClause.length ? whereClause : whereClause}
-         ORDER BY p.${safeSortBy} ${safeSortOrder}
-         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-        [...values, limit, offset]
+          LEFT JOIN LATERAL (
+            SELECT url, thumbnail_url FROM product_images
+            WHERE product_id = p.id AND tenant_id = p.tenant_id AND is_primary = true
+            ORDER BY sort_order ASC LIMIT 1
+          ) pi ON true
+          ${tenantClause}
+          ORDER BY p.${safeSortBy} ${safeSortOrder}
+          LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}`,
+        [...values, auth.user.tenant_id, limit, offset]
       ),
     ]);
     const total = parseInt(countResult.rows[0].count);
@@ -156,10 +159,11 @@ export async function POST(request: NextRequest) {
     const { name, description, price, category, stock, brand, rating, image_url, sku, status } = parsed.data;
 
     const result = await query(
-      `INSERT INTO products (name, description, price, category, stock, brand, rating, image_url, sku, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO products (tenant_id, name, description, price, category, stock, brand, rating, image_url, sku, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
+        auth.user.tenant_id,
         name,
         description || "",
         price,
@@ -188,6 +192,7 @@ export async function POST(request: NextRequest) {
       },
       // PHASE 8: use authenticated user's email for audit trail
       performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json(result.rows[0], { status: 201 });

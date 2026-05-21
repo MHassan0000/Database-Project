@@ -17,8 +17,9 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const result = await query("SELECT * FROM products WHERE id = $1", [
+    const result = await query("SELECT * FROM products WHERE id = $1 AND tenant_id = $2", [
       parseInt(id),
+      auth.user.tenant_id,
     ]);
 
     if (result.rows.length === 0) {
@@ -63,7 +64,7 @@ export async function PUT(
        SET name = $1, description = $2, price = $3, category = $4,
            stock = $5, brand = $6, rating = $7, image_url = $8, sku = $9,
            status = $10, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11
+       WHERE id = $11 AND tenant_id = $12
        RETURNING *`,
       [
         name,
@@ -77,6 +78,7 @@ export async function PUT(
         sku || "",
         status || "active",
         parseInt(id),
+        auth.user.tenant_id,
       ]
     );
 
@@ -93,6 +95,7 @@ export async function PUT(
       entityName: result.rows[0].name,
       details: { updated_fields: Object.keys(result.rows[0]).filter(k => !['id','created_at','updated_at'].includes(k)) },
       performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json(result.rows[0]);
@@ -118,8 +121,8 @@ export async function DELETE(
     const { id } = await params;
 
     const result = await query(
-      "DELETE FROM products WHERE id = $1 RETURNING *",
-      [parseInt(id)]
+      "DELETE FROM products WHERE id = $1 AND tenant_id = $2 RETURNING *",
+      [parseInt(id), auth.user.tenant_id]
     );
 
     if (result.rows.length === 0) {
@@ -141,6 +144,7 @@ export async function DELETE(
         status: deleted.status,
       },
       performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json({
@@ -183,8 +187,8 @@ export async function PATCH(
 
     const updatedProduct = await withTransaction(async (client) => {
       const productResult = await client.query(
-        "SELECT id, stock FROM products WHERE id = $1 FOR UPDATE",
-        [parseInt(id)]
+        "SELECT id, stock FROM products WHERE id = $1 AND tenant_id = $2 FOR UPDATE",
+        [parseInt(id), auth.user.tenant_id]
       );
 
       if (productResult.rows.length === 0) {
@@ -198,14 +202,15 @@ export async function PATCH(
       }
 
       const updateResult = await client.query(
-        "UPDATE products SET stock = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *",
-        [nextStock, parseInt(id)]
+        "UPDATE products SET stock = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND tenant_id = $3 RETURNING *",
+        [nextStock, parseInt(id), auth.user.tenant_id]
       );
 
       await client.query(
-        `INSERT INTO stock_movements (product_id, delta, reason, note, stock_after)
-         VALUES ($1, $2, $3, $4, $5)` ,
+        `INSERT INTO stock_movements (tenant_id, product_id, delta, reason, note, stock_after)
+         VALUES ($1, $2, $3, $4, $5, $6)` ,
         [
+          auth.user.tenant_id,
           parseInt(id),
           Number(delta),
           reason || "adjustment",
@@ -234,6 +239,7 @@ export async function PATCH(
         stock_after: updatedProduct.stock,
       },
       performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json({

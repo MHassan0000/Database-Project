@@ -1,11 +1,10 @@
 // PHASE 8 START: POST /api/auth/register
-// Registers a new user. The very first user in the system automatically
-// receives the "admin" role; every subsequent user gets "viewer" by default.
+// Registers a new user and creates a dedicated tenant workspace.
 
 import { type NextRequest } from "next/server";
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { query } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { buildSessionCookieHeader } from "@/lib/auth";
 
@@ -51,22 +50,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Determine role (first user = admin) ─────────────────────────────────────
-    const countResult = await query("SELECT COUNT(*) AS cnt FROM users");
-    const isFirstUser = parseInt(countResult.rows[0].cnt) === 0;
-    const role = isFirstUser ? "admin" : "viewer";
+    // ── Role for SaaS user (tenant owner) ───────────────────────────────────────
+    const role = "admin";
 
     // ── Hash password (bcrypt, cost factor 12) ──────────────────────────────────
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // ── Create user ─────────────────────────────────────────────────────────────
-    const userResult = await query(
-      `INSERT INTO users (name, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role, avatar_url, is_active, last_login, created_at, updated_at`,
-      [name.trim(), email.trim().toLowerCase(), passwordHash, role]
-    );
-    const user = userResult.rows[0];
+    // ── Create tenant + user in a transaction ─────────────────────────────────-
+    const user = await withTransaction(async (client) => {
+      const tenantName = `${name.trim()} Workspace`;
+      const tenantResult = await client.query(
+        `INSERT INTO tenants (name)
+         VALUES ($1)
+         RETURNING id, name, created_at, updated_at`,
+        [tenantName]
+      );
+
+      const tenantId = tenantResult.rows[0].id as number;
+
+      const userResult = await client.query(
+        `INSERT INTO users (tenant_id, name, email, password_hash, role)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, tenant_id, name, email, role, avatar_url, is_active, last_login, created_at, updated_at`,
+        [tenantId, name.trim(), email.trim().toLowerCase(), passwordHash, role]
+      );
+
+      return userResult.rows[0];
+    });
 
     // ── Create session ──────────────────────────────────────────────────────────
     const token = randomBytes(32).toString("hex");
@@ -86,8 +96,9 @@ export async function POST(request: NextRequest) {
       entityId: user.id,
       entityName: user.email,
       details: { role },
-      performedBy: "system",
+      performedBy: user.email,
       ipAddress: request.headers.get("x-forwarded-for") ?? null,
+      tenantId: user.tenant_id,
     });
 
     const response = Response.json(

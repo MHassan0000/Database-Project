@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
 
           const result = await client.query(
             `INSERT INTO products
-               (name, price, stock, sku, category, brand, description, rating, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+               (tenant_id, name, price, stock, sku, category, brand, description, rating, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING id`,
-            [name, price, stock, sku, category, brand, description, rating, productStatus]
+            [auth.user.tenant_id, name, price, stock, sku, category, brand, description, rating, productStatus]
           );
 
           importedIds.push(Number(result.rows[0].id));
@@ -95,6 +95,8 @@ export async function POST(request: NextRequest) {
         errorRows: rows.length - importable.length,
         importedIds,
       },
+      tenantId: auth.user.tenant_id,
+      performedBy: auth.user.email,
     });
 
     return NextResponse.json({

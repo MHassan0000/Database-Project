@@ -3,11 +3,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { requireRole } from "@/lib/auth";
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; productId: string }> }
 ) {
+  const auth = await requireRole(request, ["admin", "manager"]);
+  if (!auth.ok) return auth.response;
   try {
 
     const { id, productId } = await params;
@@ -23,9 +26,9 @@ export async function DELETE(
 
     const result = await query(
       `DELETE FROM product_suppliers
-       WHERE supplier_id = $1 AND product_id = $2
+       WHERE supplier_id = $1 AND product_id = $2 AND tenant_id = $3
        RETURNING *`,
-      [supplierId, productIdNum]
+      [supplierId, productIdNum, auth.user.tenant_id]
     );
 
     if (result.rows.length === 0) {

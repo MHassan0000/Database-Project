@@ -55,24 +55,27 @@ export async function GET(request: NextRequest) {
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const tenantClause = whereClause
+      ? `${whereClause} AND s.tenant_id = $${paramIdx}`
+      : `WHERE s.tenant_id = $${paramIdx}`;
 
     // Run count + data queries in PARALLEL
     const [countResult, dataResult] = await Promise.all([
       query(
-        `SELECT COUNT(*) FROM suppliers s ${whereClause}`,
-        params
+        `SELECT COUNT(*) FROM suppliers s ${tenantClause}`,
+        [...params, auth.user.tenant_id]
       ),
       query(
         `SELECT
            s.*,
            COUNT(DISTINCT ps.product_id) AS linked_products
          FROM suppliers s
-         LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id
-         ${whereClause}
+         LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.tenant_id = s.tenant_id
+         ${tenantClause}
          GROUP BY s.id
          ORDER BY s.${safeSortBy} ${safeSortOrder}
-         LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
-        [...params, limit, offset]
+         LIMIT $${paramIdx + 1} OFFSET $${paramIdx + 2}`,
+        [...params, auth.user.tenant_id, limit, offset]
       ),
     ]);
     const total = parseInt(countResult.rows[0].count, 10);
@@ -117,10 +120,11 @@ export async function POST(request: NextRequest) {
 
     const result = await query(
       `INSERT INTO suppliers
-         (name, email, phone, address, website, contact_person, rating, status, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         (tenant_id, name, email, phone, address, website, contact_person, rating, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
+        auth.user.tenant_id,
         name,
         email    || null,
         phone    || null,
@@ -146,7 +150,8 @@ export async function POST(request: NextRequest) {
         status: newSupplier.status,
         rating: newSupplier.rating,
       },
-      performedBy: "system",
+      performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return NextResponse.json(newSupplier, { status: 201 });

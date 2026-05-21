@@ -58,9 +58,9 @@ export async function PATCH(
     const poResult = await query(
       `SELECT po.*, s.name AS supplier_name
        FROM purchase_orders po
-       JOIN suppliers s ON s.id = po.supplier_id
-       WHERE po.id = $1`,
-      [poId]
+       JOIN suppliers s ON s.id = po.supplier_id AND s.tenant_id = po.tenant_id
+       WHERE po.id = $1 AND po.tenant_id = $2`,
+      [poId, auth.user.tenant_id]
     );
     if (poResult.rows.length === 0) {
       return NextResponse.json({ error: "Purchase order not found" }, { status: 404 });
@@ -80,9 +80,9 @@ export async function PATCH(
     const existingItems = await query(
       `SELECT poi.*, p.name AS product_name, p.stock AS current_stock
        FROM purchase_order_items poi
-       JOIN products p ON p.id = poi.product_id
-       WHERE poi.order_id = $1`,
-      [poId]
+       JOIN products p ON p.id = poi.product_id AND p.tenant_id = poi.tenant_id
+       WHERE poi.order_id = $1 AND poi.tenant_id = $2`,
+      [poId, auth.user.tenant_id]
     );
     const existingMap = new Map(existingItems.rows.map((r) => [r.id, r]));
 
@@ -122,26 +122,27 @@ export async function PATCH(
         await client.query(
           `UPDATE purchase_order_items
            SET received_qty = received_qty + $1
-           WHERE id = $2`,
-          [recv.received_qty, recv.item_id]
+           WHERE id = $2 AND tenant_id = $3`,
+          [recv.received_qty, recv.item_id, auth.user.tenant_id]
         );
 
         // 2. Update product stock
         const stockResult = await client.query(
           `UPDATE products
            SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP
-           WHERE id = $2
+           WHERE id = $2 AND tenant_id = $3
            RETURNING stock`,
-          [recv.received_qty, item.product_id]
+          [recv.received_qty, item.product_id, auth.user.tenant_id]
         );
         const newStock = stockResult.rows[0]?.stock ?? 0;
 
         // 3. Insert stock movement
         await client.query(
           `INSERT INTO stock_movements
-             (product_id, delta, reason, note, stock_after)
-           VALUES ($1, $2, 'purchase_order', $3, $4)`,
+             (tenant_id, product_id, delta, reason, note, stock_after)
+           VALUES ($1, $2, $3, 'purchase_order', $4, $5)`,
           [
+            auth.user.tenant_id,
             item.product_id,
             recv.received_qty,
             `PO #${poId} — ${po.supplier_name}`,
@@ -152,8 +153,8 @@ export async function PATCH(
 
       // 4. Recompute PO status
       const itemsCheck = await client.query(
-        `SELECT quantity, received_qty FROM purchase_order_items WHERE order_id = $1`,
-        [poId]
+        `SELECT quantity, received_qty FROM purchase_order_items WHERE order_id = $1 AND tenant_id = $2`,
+        [poId, auth.user.tenant_id]
       );
 
       const allReceived = itemsCheck.rows.every(
@@ -169,16 +170,16 @@ export async function PATCH(
       // Split into two separate queries to avoid PostgreSQL error 42P08
       // ($1 cannot be used as both character varying and text in the same statement).
       if (newStatus === "received") {
-        await client.query(
-          `UPDATE purchase_orders
-           SET status = $1, received_date = CURRENT_DATE
-           WHERE id = $2`,
-          [newStatus, poId]
-        );
+          await client.query(
+            `UPDATE purchase_orders
+             SET status = $1, received_date = CURRENT_DATE
+             WHERE id = $2 AND tenant_id = $3`,
+            [newStatus, poId, auth.user.tenant_id]
+          );
       } else {
         await client.query(
-          `UPDATE purchase_orders SET status = $1 WHERE id = $2`,
-          [newStatus, poId]
+          `UPDATE purchase_orders SET status = $1 WHERE id = $2 AND tenant_id = $3`,
+          [newStatus, poId, auth.user.tenant_id]
         );
       }
     });
@@ -186,9 +187,9 @@ export async function PATCH(
     // 6. Fetch final state of PO to return
     const finalPO = await query(
       `SELECT po.*, s.name AS supplier_name FROM purchase_orders po
-       JOIN suppliers s ON s.id = po.supplier_id
-       WHERE po.id = $1`,
-      [poId]
+       JOIN suppliers s ON s.id = po.supplier_id AND s.tenant_id = po.tenant_id
+       WHERE po.id = $1 AND po.tenant_id = $2`,
+      [poId, auth.user.tenant_id]
     );
 
     // Audit log
@@ -203,7 +204,8 @@ export async function PATCH(
         total_units_received: totalReceived,
         new_status: finalPO.rows[0].status,
       },
-      performedBy: "system",
+      performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return NextResponse.json({

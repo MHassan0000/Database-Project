@@ -27,11 +27,11 @@ export default function LoginPage() {
   // If already authenticated, redirect to the dashboard
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/");
+      router.replace("/dashboard");
     }
   }, [user, loading, router]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
@@ -58,7 +58,7 @@ export default function LoginPage() {
 
       // Refresh auth context — AuthProvider will update user state
       await refreshUser();
-      router.replace("/");
+      router.replace("/dashboard");
     } catch {
       setError("Network error. Please check your connection.");
     } finally {
@@ -205,8 +205,8 @@ export default function LoginPage() {
           {/* Footer hint */}
           <p className="text-center text-[11px] text-[#52525b]">
             {tab === "login"
-              ? "First time? Register to create an admin account."
-              : "The first account created automatically gets admin privileges."}
+              ? "First time? Register to create your workspace."
+              : "Your workspace admin is created automatically."}
           </p>
         </div>
       </div>

@@ -24,7 +24,7 @@ export async function getSession(request: NextRequest): Promise<SafeUser | null>
   try {
 
     const result = await query(
-      `SELECT u.id, u.name, u.email, u.role, u.avatar_url,
+      `SELECT u.id, u.tenant_id, u.name, u.email, u.role, u.avatar_url,
               u.is_active, u.last_login, u.created_at, u.updated_at
          FROM sessions s
          JOIN users u ON u.id = s.user_id

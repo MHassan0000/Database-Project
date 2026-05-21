@@ -35,13 +35,14 @@ export async function GET(request: NextRequest) {
          SUM(CASE WHEN sm.delta < 0 THEN ABS(sm.delta) ELSE 0 END) AS outbound,
          SUM(ABS(sm.delta))                                    AS total_units
        FROM products p
-       JOIN stock_movements sm ON sm.product_id = p.id
-       WHERE sm.created_at >= NOW() - ($1 || ' days')::INTERVAL
+       JOIN stock_movements sm ON sm.product_id = p.id AND sm.tenant_id = p.tenant_id
+       WHERE p.tenant_id = $1
+         AND sm.created_at >= NOW() - ($2 || ' days')::INTERVAL
          AND p.status = 'active'
        GROUP BY p.id, p.name, p.sku, p.category, p.stock, p.price
        ORDER BY total_units DESC
-       LIMIT $2`,
-      [days, limit]
+       LIMIT $3`,
+      [auth.user.tenant_id, days, limit]
     );
 
     // Dead stock: stocked products with no movement in period
@@ -50,15 +51,17 @@ export async function GET(request: NextRequest) {
          p.id, p.name, p.sku, p.category,
          p.stock AS current_stock, p.price
        FROM products p
-       WHERE p.status = 'active'
+       WHERE p.tenant_id = $1
+         AND p.status = 'active'
          AND p.stock > 0
          AND p.id NOT IN (
            SELECT DISTINCT product_id FROM stock_movements
-           WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL
+           WHERE tenant_id = $1
+             AND created_at >= NOW() - ($2 || ' days')::INTERVAL
          )
        ORDER BY p.stock DESC
        LIMIT 10`,
-      [days]
+      [auth.user.tenant_id, days]
     );
 
     return NextResponse.json({

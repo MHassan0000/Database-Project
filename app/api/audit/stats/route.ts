@@ -16,41 +16,49 @@ export async function GET(request: NextRequest) {
     const actionCounts = await query(
       `SELECT action, COUNT(*) AS count
        FROM audit_log
+       WHERE tenant_id = $1
        GROUP BY action
-       ORDER BY count DESC`
+       ORDER BY count DESC`,
+      [auth.user.tenant_id]
     );
 
     // Entity type breakdown
     const entityCounts = await query(
       `SELECT entity_type, COUNT(*) AS count
        FROM audit_log
+       WHERE tenant_id = $1
        GROUP BY entity_type
-       ORDER BY count DESC`
+       ORDER BY count DESC`,
+      [auth.user.tenant_id]
     );
 
     // Recent 10 log entries for the activity feed
     const recent = await query(
       `SELECT id, action, entity_type, entity_id, entity_name, performed_by, created_at
        FROM audit_log
+       WHERE tenant_id = $1
        ORDER BY created_at DESC
-       LIMIT 10`
+       LIMIT 10`,
+      [auth.user.tenant_id]
     );
 
     // Total entries
-    const totalResult = await query("SELECT COUNT(*) FROM audit_log");
+    const totalResult = await query("SELECT COUNT(*) FROM audit_log WHERE tenant_id = $1", [auth.user.tenant_id]);
     const total = parseInt(totalResult.rows[0].count, 10);
 
     // Entries in last 24h
     const last24hResult = await query(
       `SELECT COUNT(*) FROM audit_log
-       WHERE created_at >= NOW() - INTERVAL '24 hours'`
+       WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '24 hours'`,
+      [auth.user.tenant_id]
     );
     const last24h = parseInt(last24hResult.rows[0].count, 10);
 
     // Entries in last 7 days
     const last7dResult = await query(
       `SELECT COUNT(*) FROM audit_log
-       WHERE created_at >= NOW() - INTERVAL '7 days'`
+       WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '7 days'`,
+      [auth.user.tenant_id]
     );
     const last7d = parseInt(last7dResult.rows[0].count, 10);
 
@@ -58,9 +66,11 @@ export async function GET(request: NextRequest) {
     const topActorResult = await query(
       `SELECT performed_by, COUNT(*) AS count
        FROM audit_log
+       WHERE tenant_id = $1
        GROUP BY performed_by
        ORDER BY count DESC
-       LIMIT 1`
+       LIMIT 1`,
+      [auth.user.tenant_id]
     );
 
     return NextResponse.json({

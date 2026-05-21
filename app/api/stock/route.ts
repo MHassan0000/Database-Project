@@ -15,20 +15,22 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const offset = (page - 1) * limit;
 
-    const countResult = await query("SELECT COUNT(*) FROM stock_movements");
+    const countResult = await query("SELECT COUNT(*) FROM stock_movements WHERE tenant_id = $1", [auth.user.tenant_id]);
     const total = parseInt(countResult.rows[0].count);
 
     const movementsResult = await query(
       `SELECT sm.*, p.name as product_name, p.sku, p.brand, p.category, p.status
        FROM stock_movements sm
-       JOIN products p ON p.id = sm.product_id
+       JOIN products p ON p.id = sm.product_id AND p.tenant_id = sm.tenant_id
+       WHERE sm.tenant_id = $1
        ORDER BY sm.created_at DESC
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
+       LIMIT $2 OFFSET $3`,
+      [auth.user.tenant_id, limit, offset]
     );
 
     const netDeltaResult = await query(
-      "SELECT COALESCE(SUM(delta), 0) as net_delta FROM stock_movements"
+      "SELECT COALESCE(SUM(delta), 0) as net_delta FROM stock_movements WHERE tenant_id = $1",
+      [auth.user.tenant_id]
     );
 
     return Response.json({

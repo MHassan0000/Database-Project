@@ -25,8 +25,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const result = await query(
-      "UPDATE products SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = ANY($2::int[])",
-      [status, ids]
+      "UPDATE products SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE tenant_id = $2 AND id = ANY($3::int[])",
+      [status, auth.user.tenant_id, ids]
     );
 
     // Phase 3: log bulk status update
@@ -34,7 +34,8 @@ export async function PATCH(request: NextRequest) {
       action: "bulk_update",
       entityType: "product",
       details: { ids, status, count: result.rowCount },
-      performedBy: "system",
+      performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json({ updated: result.rowCount });
@@ -62,8 +63,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     const result = await query(
-      "DELETE FROM products WHERE id = ANY($1::int[])",
-      [ids]
+      "DELETE FROM products WHERE tenant_id = $1 AND id = ANY($2::int[])",
+      [auth.user.tenant_id, ids]
     );
 
     // Phase 3: log bulk deletion
@@ -72,6 +73,7 @@ export async function DELETE(request: NextRequest) {
       entityType: "product",
       details: { ids, count: result.rowCount },
       performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json({ deleted: result.rowCount });

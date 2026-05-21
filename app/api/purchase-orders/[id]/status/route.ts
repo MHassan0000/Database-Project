@@ -60,8 +60,8 @@ export async function PATCH(
 
     // Fetch existing PO
     const existing = await query(
-      `SELECT id, status FROM purchase_orders WHERE id = $1`,
-      [poId]
+      `SELECT id, status FROM purchase_orders WHERE id = $1 AND tenant_id = $2`,
+      [poId, auth.user.tenant_id]
     );
     if (existing.rows.length === 0) {
       return NextResponse.json({ error: "Purchase order not found" }, { status: 404 });
@@ -83,8 +83,8 @@ export async function PATCH(
     }
 
     const updated = await query(
-      `UPDATE purchase_orders SET status = $1 WHERE id = $2 RETURNING *`,
-      [newStatus, poId]
+      `UPDATE purchase_orders SET status = $1 WHERE id = $2 AND tenant_id = $3 RETURNING *`,
+      [newStatus, poId, auth.user.tenant_id]
     );
 
     await logAudit({
@@ -94,6 +94,7 @@ export async function PATCH(
       entityName: `PO #${poId}`,
       details: { old_status: currentStatus, new_status: newStatus },
       performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return NextResponse.json(updated.rows[0]);

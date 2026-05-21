@@ -30,6 +30,10 @@ export async function GET(request: NextRequest) {
     const params: (string | number)[] = [];
     let idx = 1;
 
+    conditions.push(`tenant_id = $${idx}`);
+    params.push(auth.user.tenant_id);
+    idx++;
+
     if (entityType !== "all") {
       conditions.push(`entity_type = $${idx}`);
       params.push(entityType);

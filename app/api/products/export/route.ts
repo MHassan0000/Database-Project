@@ -82,10 +82,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
+      const likePattern = `%${search.replace(/[%_\\]/g, "\\$&")}%`;
       conditions.push(
-        `to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(brand, '') || ' ' || coalesce(sku, '')) @@ plainto_tsquery('simple', $${paramIndex})`
+        `(name ILIKE $${paramIndex} OR sku ILIKE $${paramIndex} OR brand ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`
       );
-      values.push(search);
+      values.push(likePattern);
       paramIndex++;
     }
 
@@ -108,9 +109,13 @@ export async function GET(request: NextRequest) {
       : "created_at";
     const safeSortOrder = sortOrder === "asc" ? "ASC" : "DESC";
 
+    const tenantClause = whereClause
+      ? `${whereClause} AND tenant_id = $${paramIndex}`
+      : `WHERE tenant_id = $${paramIndex}`;
+
     const productsResult = await query(
-      `SELECT * FROM products ${whereClause} ORDER BY ${safeSortBy} ${safeSortOrder}`,
-      values
+      `SELECT * FROM products ${tenantClause} ORDER BY ${safeSortBy} ${safeSortOrder}`,
+      [...values, auth.user.tenant_id]
     );
 
     const rows = productsResult.rows.map((row) =>

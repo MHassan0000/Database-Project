@@ -27,13 +27,17 @@ export async function PUT(
 
     // Fetch existing user
     const existing = await query(
-      `SELECT id, name, email, role, is_active FROM users WHERE id = $1`,
+      `SELECT id, tenant_id, name, email, role, is_active FROM users WHERE id = $1`,
       [userId]
     );
     if (existing.rows.length === 0) {
       return Response.json({ error: "User not found." }, { status: 404 });
     }
     const before = existing.rows[0];
+
+    if (before.tenant_id !== auth.user.tenant_id) {
+      return Response.json({ error: "User not found." }, { status: 404 });
+    }
 
     // Parse updates
     const body = await request.json();
@@ -107,10 +111,14 @@ export async function PUT(
     values.push(userId);
     const result = await query(
       `UPDATE users SET ${updates.join(", ")}
-        WHERE id = $${idx}
-       RETURNING id, name, email, role, avatar_url, is_active, last_login, created_at, updated_at`,
-      values
+        WHERE id = $${idx} AND tenant_id = $${idx + 1}
+       RETURNING id, tenant_id, name, email, role, avatar_url, is_active, last_login, created_at, updated_at`,
+      [...values, auth.user.tenant_id]
     );
+
+    if (result.rows.length === 0) {
+      return Response.json({ error: "User not found." }, { status: 404 });
+    }
 
     const after = result.rows[0];
 
@@ -122,6 +130,7 @@ export async function PUT(
       details: buildDiff(before, after),
       performedBy: auth.user.email,
       ipAddress: request.headers.get("x-forwarded-for") ?? null,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json({ user: after });
@@ -152,14 +161,18 @@ export async function DELETE(
       return Response.json({ error: "You cannot delete your own account." }, { status: 400 });
     }
 
-    const existing = await query("SELECT id, email, name FROM users WHERE id = $1", [userId]);
+    const existing = await query("SELECT id, tenant_id, email, name FROM users WHERE id = $1", [userId]);
     if (existing.rows.length === 0) {
       return Response.json({ error: "User not found." }, { status: 404 });
     }
     const user = existing.rows[0];
 
+    if (user.tenant_id !== auth.user.tenant_id) {
+      return Response.json({ error: "User not found." }, { status: 404 });
+    }
+
     // Sessions cascade-deleted via FK ON DELETE CASCADE
-    await query("DELETE FROM users WHERE id = $1", [userId]);
+    await query("DELETE FROM users WHERE id = $1 AND tenant_id = $2", [userId, auth.user.tenant_id]);
 
     await logAudit({
       action: "delete",
@@ -169,6 +182,7 @@ export async function DELETE(
       details: { deletedBy: auth.user.email, deletedName: user.name },
       performedBy: auth.user.email,
       ipAddress: request.headers.get("x-forwarded-for") ?? null,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json({ message: `User ${user.email} deleted.` });

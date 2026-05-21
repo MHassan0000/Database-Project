@@ -1,967 +1,333 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Product, ProductFormData, PaginatedResponse } from "@/lib/types";
-import { ToastProvider, useToast } from "@/components/Toast";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
-import FilterBar from "@/components/FilterBar";
-import ProductTable from "@/components/ProductTable";
-import ProductModal from "@/components/ProductModal";
-import DeleteConfirmModal from "@/components/DeleteConfirmModal";
-import Pagination from "@/components/Pagination";
-import StockAdjustModal from "@/components/StockAdjustModal";
-import DashboardStats from "@/components/DashboardStats";
-import BulkActions from "@/components/BulkActions";
-import InventoryAlerts from "@/components/InventoryAlerts";
-import AdvancedCharts from "@/components/AdvancedCharts";
-import QuickActions from "@/components/QuickActions";
-import InsightsPanel from "@/components/InsightsPanel";
-// Phase 2: Supplier management components
-import SupplierTable from "@/components/SupplierTable";
-import SupplierModal from "@/components/SupplierModal";
-import SupplierDetail from "@/components/SupplierDetail";
-import SupplierStats from "@/components/SupplierStats";
-// Phase 3: Audit trail components
-import ActivityFeed from "@/components/ActivityFeed";
-import AuditLog from "@/components/AuditLog";
-// Phase 4: Purchase Orders & Reorder components
-import POStats from "@/components/POStats";
-import PurchaseOrderList from "@/components/PurchaseOrderList";
-import PurchaseOrderModal from "@/components/PurchaseOrderModal";
-import PurchaseOrderDetail from "@/components/PurchaseOrderDetail";
-import ReorderSuggestions from "@/components/ReorderSuggestions";
-// PHASE 5 IMPLEMENTATION START
-import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
-// PHASE 5 IMPLEMENTATION END
-// PHASE 6 IMPLEMENTATION START
-import ImportModal from "@/components/ImportModal";
-// PHASE 6 IMPLEMENTATION END
-// PHASE 8 START: auth context + user management component
+import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import UserManagement from "@/components/UserManagement";
-// PHASE 8 END: imports
-import { Loader2 } from "lucide-react";
+import { ArrowRight, ShieldCheck, Sparkles, Layers, Activity, Zap } from "lucide-react";
 
-function Dashboard() {
-  const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState("dashboard");
-
-  // PHASE 8 START: authentication guard — redirect to /login if not authenticated
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace("/login");
-    }
-  }, [user, authLoading, router]);
-  // PHASE 8 END: auth guard
-
-  // Products state
-  const [data, setData] = useState<PaginatedResponse>({
-    products: [],
-    total: 0,
-    page: 1,
-    limit: 12,
-    totalPages: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-
-  // Filters
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [minRating, setMinRating] = useState("");
-  const [status, setStatus] = useState("all");
-  const [sortBy, setSortBy] = useState("created_at");
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [page, setPage] = useState(1);
-
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [modalLoading, setModalLoading] = useState(false);
-
-  // Stock adjust modal state
-  const [stockAdjustOpen, setStockAdjustOpen] = useState(false);
-  const [stockAdjustProductId, setStockAdjustProductId] = useState<number | null>(null);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [bulkLoading, setBulkLoading] = useState(false);
-
-  // Delete state
-  const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Phase 2: Supplier state
-  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<import("@/lib/types").Supplier | null>(null);
-  const [supplierModalLoading, setSupplierModalLoading] = useState(false);
-  const [supplierDetailId, setSupplierDetailId] = useState<number | null>(null);
-  const [supplierRefreshKey, setSupplierRefreshKey] = useState(0);
-  // Holds pending supplier link data after product save
-  const [pendingSupplierLink, setPendingSupplierLink] = useState<{
-    supplierId: number;
-    costPrice: number;
-    leadDays: number;
-  } | null>(null);
-
-  // Phase 4: Purchase Order state
-  const [poModalOpen, setPOModalOpen]                   = useState(false);
-  const [editingPO, setEditingPO]                       = useState<import("@/lib/types").PurchaseOrder | null>(null);
-  const [poModalLoading, setPOModalLoading]             = useState(false);
-  const [poDetailId, setPODetailId]                     = useState<number | null>(null);
-  const [poRefreshKey, setPORefreshKey]                 = useState(0);
-  const [poModalPrefill, setPOModalPrefill]             = useState<{
-    supplier_id?: number;
-    product_id?: number;
-    product_name?: string;
-    quantity?: number;
-    unit_price?: number;
-  } | null>(null);
-
-  // PHASE 6: Batch import modal state
-  const [importModalOpen, setImportModalOpen] = useState(false);
-
-  // Debounced search
-  const [searchDebounce, setSearchDebounce] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setSearchDebounce(search), 350);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  // Listen for tab-switch events dispatched by child components (e.g. ActivityFeed "View full log")
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const tab = (e as CustomEvent<string>).detail;
-      if (tab) setActiveTab(tab);
-    };
-    window.addEventListener("obsidian:tab", handler);
-    return () => window.removeEventListener("obsidian:tab", handler);
-  }, []);
-
-
-  // Fetch products
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (category !== "all") params.set("category", category);
-      if (minPrice) params.set("minPrice", minPrice);
-      if (maxPrice) params.set("maxPrice", maxPrice);
-      if (minRating) params.set("minRating", minRating);
-      if (searchDebounce) params.set("search", searchDebounce);
-      if (status !== "all") params.set("status", status);
-      params.set("sortBy", sortBy);
-      params.set("sortOrder", sortOrder);
-      params.set("page", page.toString());
-      params.set("limit", "12");
-
-      const res = await fetch(`/api/products?${params.toString()}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to fetch products");
-      setData(json);
-    } catch {
-      showToast("Failed to fetch products", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [category, minPrice, maxPrice, minRating, searchDebounce, status, sortBy, sortOrder, page, showToast]);
-
-  useEffect(() => {
-    // Don't fetch until auth is resolved and user is confirmed
-    if (authLoading || !user) return;
-    fetchProducts();
-  }, [fetchProducts, authLoading, user]);
-
-  // Reset page on filter change
-  useEffect(() => {
-    setPage(1);
-  }, [category, minPrice, maxPrice, minRating, searchDebounce, status, sortBy, sortOrder]);
-
-
-  // Create / Update
-  const handleSubmit = async (formData: ProductFormData) => {
-    setModalLoading(true);
-    try {
-      const url = editingProduct
-        ? `/api/products/${editingProduct.id}`
-        : "/api/products";
-      const method = editingProduct ? "PUT" : "POST";
-
-      const payload = {
-        ...formData,
-        rating: formData.rating === "" ? 0 : formData.rating,
-      };
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to save product");
-      }
-
-      const savedProduct = await res.json();
-
-      // Phase 2: link supplier if one was selected in ProductModal
-      if (pendingSupplierLink && savedProduct.id) {
-        try {
-          await fetch(`/api/suppliers/${pendingSupplierLink.supplierId}/products`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              product_id: savedProduct.id,
-              cost_price: pendingSupplierLink.costPrice,
-              lead_days: pendingSupplierLink.leadDays,
-              is_primary: true,
-            }),
-          });
-        } catch {
-          // Non-fatal: product was saved, supplier link silently failed
-          showToast("Product saved but supplier link failed", "error");
-        }
-        setPendingSupplierLink(null);
-      }
-
-      showToast(
-        editingProduct
-          ? "Product updated successfully!"
-          : "Product created successfully!",
-        "success"
-      );
-      setModalOpen(false);
-      setEditingProduct(null);
-      fetchProducts();
-    } catch (err) {
-      showToast(
-        err instanceof Error ? err.message : "Something went wrong",
-        "error"
-      );
-    } finally {
-      setModalLoading(false);
-    }
-  };
-
-  // Delete
-  const handleDelete = async () => {
-    if (!deleteProduct) return;
-    setDeleteLoading(true);
-    try {
-      const res = await fetch(`/api/products/${deleteProduct.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete product");
-
-      showToast("Product deleted successfully!", "success");
-      setDeleteProduct(null);
-      fetchProducts();
-    } catch {
-      showToast("Failed to delete product", "error");
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
-  const clearFilters = () => {
-    setSearch("");
-    setCategory("all");
-    setMinPrice("");
-    setMaxPrice("");
-    setMinRating("");
-    setStatus("all");
-    setSortBy("created_at");
-    setSortOrder("desc");
-    setPage(1);
-  };
-
-  // Phase 2: Supplier CRUD handlers
-  const handleSupplierSubmit = async (formData: import("@/lib/types").SupplierFormData) => {
-    setSupplierModalLoading(true);
-    try {
-      const url = editingSupplier ? `/api/suppliers/${editingSupplier.id}` : "/api/suppliers";
-      const method = editingSupplier ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to save supplier");
-      }
-      showToast(
-        editingSupplier ? "Supplier updated!" : "Supplier created!",
-        "success"
-      );
-      setSupplierModalOpen(false);
-      setEditingSupplier(null);
-      setSupplierRefreshKey((k) => k + 1);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Something went wrong", "error");
-    } finally {
-      setSupplierModalLoading(false);
-    }
-  };
-
-  const handleSupplierDelete = async (supplier: import("@/lib/types").Supplier) => {
-    if (!confirm(`Delete supplier "${supplier.name}"? This cannot be undone.`)) return;
-    try {
-      const res = await fetch(`/api/suppliers/${supplier.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to delete supplier");
-      }
-      showToast("Supplier deleted", "success");
-      setSupplierRefreshKey((k) => k + 1);
-      if (supplierDetailId === supplier.id) setSupplierDetailId(null);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Delete failed", "error");
-    }
-  };
-
-  // Phase 4: Purchase Order CRUD handlers
-  const handlePOSubmit = async (formData: import("@/lib/types").PurchaseOrderFormData) => {
-    setPOModalLoading(true);
-    try {
-      const url    = editingPO ? `/api/purchase-orders/${editingPO.id}` : "/api/purchase-orders";
-      const method = editingPO ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to save purchase order");
-      }
-      const saved = await res.json();
-      showToast(
-        editingPO ? "Purchase order updated!" : `PO #${saved.id} created!`,
-        "success"
-      );
-      setPOModalOpen(false);
-      setEditingPO(null);
-      setPOModalPrefill(null);
-      setPORefreshKey((k) => k + 1);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Something went wrong", "error");
-    } finally {
-      setPOModalLoading(false);
-    }
-  };
-
-  const handlePODelete = async (po: import("@/lib/types").PurchaseOrder) => {
-    if (!confirm(`Delete draft PO #${po.id}? This cannot be undone.`)) return;
-    try {
-      const res = await fetch(`/api/purchase-orders/${po.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to delete PO");
-      }
-      showToast(`PO #${po.id} deleted`, "success");
-      setPORefreshKey((k) => k + 1);
-      if (poDetailId === po.id) setPODetailId(null);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Delete failed", "error");
-    }
-  };
-
-  const applyBulkStatus = async (nextStatus: string) => {
-    if (selectedIds.length === 0) return;
-    setBulkLoading(true);
-    try {
-      const res = await fetch("/api/products/bulk", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedIds, status: nextStatus }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Bulk update failed");
-      showToast(`Updated ${json.updated} products`, "success");
-      setSelectedIds([]);
-      fetchProducts();
-    } catch (error) {
-      showToast(
-        error instanceof Error ? error.message : "Bulk update failed",
-        "error"
-      );
-    } finally {
-      setBulkLoading(false);
-    }
-  };
-
-  const bulkDelete = async () => {
-    if (selectedIds.length === 0) return;
-    setBulkLoading(true);
-    try {
-      const res = await fetch("/api/products/bulk", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedIds }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Bulk delete failed");
-      showToast(`Deleted ${json.deleted} products`, "success");
-      setSelectedIds([]);
-      fetchProducts();
-    } catch (error) {
-      showToast(
-        error instanceof Error ? error.message : "Bulk delete failed",
-        "error"
-      );
-    } finally {
-      setBulkLoading(false);
-    }
-  };
-
-  // PHASE 8 START: auth loading state — show spinner while auth resolves
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#52525b] animate-spin-slow" />
-      </div>
-    );
-  }
-
-  // Role helpers for RBAC
-  const isAdmin   = user.role === "admin";
-  const isMgr     = user.role === "admin" || user.role === "manager";
-  // PHASE 8 END: auth loading state
+export default function HomePage() {
+  const { user, loading } = useAuth();
 
   return (
-    <div className="min-h-screen bg-transparent overflow-x-hidden lg:h-[100dvh] lg:overflow-hidden">
-      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
-      <div className="lg:flex lg:h-full lg:items-stretch">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-
-        <main className="relative z-0 w-full min-w-0 lg:flex-1 lg:min-h-0 lg:h-full lg:overflow-y-auto lg:overscroll-contain overflow-x-hidden">
-          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-10">
-        {activeTab === "dashboard" && (
-          <div className="space-y-8 animate-fade-in">
-              {/* Header */}
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                    Live Inventory
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse-soft" />
-                  </div>
-                  <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                    Product Control Center
-                  </h2>
-                  <p className="text-sm sm:text-base text-muted max-w-2xl">
-                    Maintain a premium catalog, monitor inventory health, and keep every SKU ready for launch.
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl ambient-inset">
-                    <div className="text-xs uppercase text-[#a1a1aa] tracking-wider">Total SKUs</div>
-                    <div className="text-lg font-semibold text-white">{data.total}</div>
-                  </div>
-
-                </div>
+    <div className="min-h-screen bg-transparent">
+      {/* Navbar */}
+      <header className="sticky top-0 z-50 border-b border-[#27272a]/70 bg-[#0a0a0c]/80 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center shadow-lg shadow-black/40 overflow-hidden">
+                <Image
+                  src="/images/logobg.png"
+                  alt="Obsidian"
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                  priority
+                />
               </div>
-
-            <DashboardStats />
-
-            <InventoryAlerts
-              onAdjustStock={(product) => {
-                setStockAdjustProductId(product.id);
-                setStockAdjustOpen(true);
-              }}
-            />
-
-            <AdvancedCharts products={data.products} />
-
-            <InsightsPanel products={data.products} />
-
-            {/* Phase 3: Activity feed on dashboard Overview — PHASE 8 FIX: admin/manager only */}
-            {isMgr ? (
-              <ActivityFeed />
-            ) : (
-              /* Viewer-friendly placeholder instead of a 403 error */
-              <div className="ambient-card rounded-3xl p-6 flex items-center gap-4 text-[#52525b]">
-                <svg className="w-5 h-5 flex-shrink-0 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                </svg>
-                <div>
-                  <p className="text-sm font-medium text-[#71717a]">Recent Activity</p>
-                  <p className="text-xs">Audit log access requires Manager or Admin role.</p>
-                </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Obsidian</p>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-[#71717a]">Inventory Suite</p>
               </div>
-            )}
-
-
-
-
-            <BulkActions
-              selectedCount={selectedIds.length}
-              onClear={() => setSelectedIds([])}
-              onApplyStatus={applyBulkStatus}
-              onDelete={bulkDelete}
-              loading={bulkLoading}
-            />
-
-            {/* Filters */}
-            <FilterBar
-              search={search}
-              onSearchChange={setSearch}
-              category={category}
-              onCategoryChange={setCategory}
-              status={status}
-              onStatusChange={setStatus}
-              minPrice={minPrice}
-              onMinPriceChange={setMinPrice}
-              maxPrice={maxPrice}
-              onMaxPriceChange={setMaxPrice}
-              minRating={minRating}
-              onMinRatingChange={setMinRating}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-              sortOrder={sortOrder}
-              onSortOrderChange={setSortOrder}
-              onClearFilters={clearFilters}
-              onAddProduct={() => {
-                setEditingProduct(null);
-                setModalOpen(true);
-              }}
-              onStockAdjust={() => {
-                setStockAdjustProductId(null);
-                setStockAdjustOpen(true);
-              }}
-              totalProducts={data.total}
-            />
-
-            {/* Table — PHASE 8: pass role flags so table can hide restricted actions */}
-            <ProductTable
-              products={data.products}
-              loading={loading}
-              onSelectChange={setSelectedIds}
-              onAdjustStock={isMgr ? (product) => {
-                setStockAdjustProductId(product.id);
-                setStockAdjustOpen(true);
-              } : undefined}
-              onEdit={isMgr ? (product) => {
-                setEditingProduct(product);
-                setModalOpen(true);
-              } : undefined}
-              onDelete={isAdmin ? (product) => setDeleteProduct(product) : undefined}
-            />
-
-            {/* Pagination */}
-            <Pagination
-              page={data.page}
-              totalPages={data.totalPages}
-              total={data.total}
-              limit={data.limit}
-              onPageChange={setPage}
-            />
-          </div>
-        )}
-
-        {/* PHASE 5 IMPLEMENTATION START: Advanced Analytics replaces old Reports in this tab */}
-        {activeTab === "reports" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                Analytics
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                Advanced Analytics
-              </h2>
-              <p className="text-sm sm:text-base text-muted max-w-2xl">
-                Stock movement trends, inventory value history, velocity rankings, and category performance.
-              </p>
             </div>
-            {/* Phase 5: AnalyticsDashboard — trend, value, category, velocity charts */}
-            <AnalyticsDashboard />
-          </div>
-        )}
-        {/* PHASE 5 IMPLEMENTATION END */}
 
-        {activeTab === "catalog" && (
-          <div className="space-y-8 animate-fade-in">
-            {/* PHASE 6 IMPLEMENTATION START — Catalog header with Import CSV button */}
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                  Catalog
-                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                </div>
-                <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                  Product Catalog
-                </h2>
-                <p className="text-sm sm:text-base text-muted max-w-2xl">
-                  Curate and manage the full product lifecycle from draft to archive.
-                </p>
+            <div className="flex items-center gap-2">
+              {user ? (
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-black bg-white hover:bg-[#e4e4e7] transition-all"
+                >
+                  Dashboard
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-white border border-[#27272a] bg-[#111113] hover:bg-[#18181b] transition-all"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-black bg-white hover:bg-[#e4e4e7] transition-all"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-12 items-center">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#18181b] border border-[#27272a] text-white">
+                <Sparkles className="w-3.5 h-3.5" />
+                SaaS Inventory OS
               </div>
-              {/* PHASE 6: Import CSV button in catalog header */}
-              <button
-                id="catalog-import-csv-btn"
-                onClick={() => setImportModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold text-white border border-[#27272a] bg-[#0f141c] hover:bg-[#141a26] hover:border-[#3f3f46] transition-all"
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-(--font-display) text-gradient leading-tight">
+                Modern inventory control for every workspace.
+              </h1>
+              <p className="text-sm sm:text-base text-[#a1a1aa] max-w-xl">
+                Obsidian transforms inventory into a multi-tenant SaaS platform. Each team gets its own secure workspace, real-time insights, and a premium ops dashboard built for scale.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {user ? (
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-black bg-white hover:bg-[#e4e4e7] transition-all"
+                  >
+                    Open Dashboard
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-black bg-white hover:bg-[#e4e4e7] transition-all"
+                    >
+                      Start Free Workspace
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-white border border-[#27272a] bg-[#111113] hover:bg-[#18181b] transition-all"
+                    >
+                      Sign In
+                    </Link>
+                  </>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-4 text-xs text-[#71717a]">
+                <span className="inline-flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#34d399]" />
+                  Tenant-isolated data
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <Activity className="w-3.5 h-3.5 text-[#60a5fa]" />
+                  Live analytics
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <Zap className="w-3.5 h-3.5 text-[#fbbf24]" />
+                  Built for operators
+                </span>
+              </div>
+            </div>
+
+            {/* Hero visual */}
+            <div className="relative">
+              <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-br from-white/10 via-white/5 to-transparent blur-2xl" />
+              <div className="relative ambient-card rounded-[28px] p-6 border border-[#27272a]">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider">
+                    <div className="w-2 h-2 rounded-full bg-[#34d399]" />
+                    Workspace Overview
+                  </div>
+                  <span className="text-[10px] text-[#71717a]">Live</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Active SKUs", value: "1,248", tint: "text-white" },
+                    { label: "Low Stock", value: "18", tint: "text-[#fbbf24]" },
+                    { label: "Inventory Value", value: "$412k", tint: "text-[#60a5fa]" },
+                    { label: "Vendors", value: "42", tint: "text-[#34d399]" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="rounded-2xl bg-[#111113] border border-[#27272a] p-4">
+                      <p className="text-[11px] text-[#71717a] uppercase tracking-wider">{stat.label}</p>
+                      <p className={`text-xl font-semibold mt-2 ${stat.tint}`}>{stat.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 rounded-2xl border border-[#27272a] bg-[#0f141c] p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider">Restock Velocity</p>
+                    <span className="text-xs text-[#34d399]">+12% MoM</span>
+                  </div>
+                  <div className="mt-3 flex items-end gap-2">
+                    {[40, 70, 55, 90, 65, 80, 60].map((h, idx) => (
+                      <div
+                        key={idx}
+                        className="flex-1 rounded-lg bg-gradient-to-t from-white/5 to-white/20"
+                        style={{ height: `${h}px` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature grid */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              title: "Tenant-first architecture",
+              desc: "Each workspace is isolated by default. Data stays secure and scoped by tenant.",
+              icon: ShieldCheck,
+            },
+            {
+              title: "Operational command center",
+              desc: "Modern dashboards, inventory alerts, and supplier workflows in one place.",
+              icon: Layers,
+            },
+            {
+              title: "Analytics that ship value",
+              desc: "Track movement trends, stock velocity, and inventory value in real time.",
+              icon: Activity,
+            },
+          ].map((feature) => (
+            <div key={feature.title} className="ambient-card rounded-3xl p-6 hover:translate-y-[-2px] transition-all">
+              <div className="w-10 h-10 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center mb-4">
+                <feature.icon className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+              <p className="text-sm text-[#a1a1aa]">{feature.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        <div className="ambient-card rounded-[32px] p-8 sm:p-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-[#71717a]">Launch Your Workspace</p>
+            <h2 className="text-3xl sm:text-4xl font-(--font-display) text-gradient mt-3">
+              Build your inventory HQ today.
+            </h2>
+            <p className="text-sm text-[#a1a1aa] mt-2 max-w-xl">
+              Start with a free workspace, invite your team later, and scale operations with confidence.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-black bg-white hover:bg-[#e4e4e7] transition-all"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 3v12" /><path d="M8 7l4-4 4 4" /><path d="M4 21h16" />
-                </svg>
-                Import CSV
-              </button>
-            </div>
-            {/* PHASE 6 IMPLEMENTATION END */}
-            <FilterBar
-              search={search}
-              onSearchChange={setSearch}
-              category={category}
-              onCategoryChange={setCategory}
-              status={status}
-              onStatusChange={setStatus}
-              minPrice={minPrice}
-              onMinPriceChange={setMinPrice}
-              maxPrice={maxPrice}
-              onMaxPriceChange={setMaxPrice}
-              minRating={minRating}
-              onMinRatingChange={setMinRating}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-              sortOrder={sortOrder}
-              onSortOrderChange={setSortOrder}
-              onClearFilters={clearFilters}
-              onAddProduct={() => {
-                setEditingProduct(null);
-                setModalOpen(true);
-              }}
-              onStockAdjust={() => {
-                setStockAdjustProductId(null);
-                setStockAdjustOpen(true);
-              }}
-              totalProducts={data.total}
-            />
-            <BulkActions
-              selectedCount={selectedIds.length}
-              onClear={() => setSelectedIds([])}
-              onApplyStatus={applyBulkStatus}
-              onDelete={bulkDelete}
-              loading={bulkLoading}
-            />
-            {/* PHASE 8: role-gated actions in catalog tab */}
-            <ProductTable
-              products={data.products}
-              loading={loading}
-              onSelectChange={setSelectedIds}
-              onAdjustStock={isMgr ? (product) => {
-                setStockAdjustProductId(product.id);
-                setStockAdjustOpen(true);
-              } : undefined}
-              onEdit={isMgr ? (product) => {
-                setEditingProduct(product);
-                setModalOpen(true);
-              } : undefined}
-              onDelete={isAdmin ? (product) => setDeleteProduct(product) : undefined}
-            />
-            <Pagination
-              page={data.page}
-              totalPages={data.totalPages}
-              total={data.total}
-              limit={data.limit}
-              onPageChange={setPage}
-            />
-          </div>
-        )}
-
-        {activeTab === "inventory" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                Inventory
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                Stock Command
-              </h2>
-              <p className="text-sm sm:text-base text-muted max-w-2xl">
-                Monitor adjustments, alert queues, and replenishment priorities.
-              </p>
-            </div>
-            <InventoryAlerts
-              onAdjustStock={(product) => {
-                setStockAdjustProductId(product.id);
-                setStockAdjustOpen(true);
-              }}
-            />
-            <AdvancedCharts products={data.products} />
-          </div>
-        )}
-
-        {/* Phase 2: Suppliers tab */}
-        {activeTab === "suppliers" && (
-          <div className="space-y-8 animate-fade-in">
-            {supplierDetailId ? (
-              /* Detail view when a supplier row is clicked */
-              <SupplierDetail
-                supplierId={supplierDetailId}
-                onEdit={(s) => {
-                  setEditingSupplier(s);
-                  setSupplierModalOpen(true);
-                }}
-                onBack={() => setSupplierDetailId(null)}
-                onUnlinkProduct={() => setSupplierRefreshKey((k) => k + 1)}
-              />
+                Continue to Dashboard
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             ) : (
               <>
-                {/* Header */}
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                      Supplier Network
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse-soft" />
-                    </div>
-                    <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                      Supplier Management
-                    </h2>
-                    <p className="text-sm sm:text-base text-muted max-w-2xl">
-                      Manage your supplier network, track lead times, and link products to vendors.
-                    </p>
-                  </div>
-                </div>
-
-                {/* KPI stats */}
-                <SupplierStats />
-
-                {/* Paginated supplier table */}
-                <SupplierTable
-                  refreshKey={supplierRefreshKey}
-                  onAdd={() => {
-                    setEditingSupplier(null);
-                    setSupplierModalOpen(true);
-                  }}
-                  onEdit={(s) => {
-                    setEditingSupplier(s);
-                    setSupplierModalOpen(true);
-                  }}
-                  onDelete={handleSupplierDelete}
-                  onView={(s) => setSupplierDetailId(s.id)}
-                />
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-black bg-white hover:bg-[#e4e4e7] transition-all"
+                >
+                  Create Workspace
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-white border border-[#27272a] bg-[#111113] hover:bg-[#18181b] transition-all"
+                >
+                  Sign In
+                </Link>
               </>
             )}
           </div>
-        )}
+        </div>
+      </section>
 
-        {activeTab === "projects" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                Workflows
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+      {/* Footer */}
+      <footer className="relative border-t border-[#27272a]/60">
+        {/* Subtle top glow line */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
+          {/* Main footer content — brand left, links right */}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10">
+            {/* Brand column */}
+            <div className="flex flex-col gap-4 max-w-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center overflow-hidden">
+                  <Image
+                    src="/images/logobg.png"
+                    alt="Obsidian"
+                    width={28}
+                    height={28}
+                    className="object-contain"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Obsidian</p>
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-[#52525b]">Inventory Suite</p>
+                </div>
               </div>
-              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                Automation Studio
-              </h2>
-              <p className="text-sm sm:text-base text-muted max-w-2xl">
-                Design and monitor operational flows across catalog, stock, and channels.
+              <p className="text-xs text-[#71717a] leading-relaxed">
+                Multi-tenant inventory management built for modern teams. Secure, scalable, and beautifully crafted.
               </p>
-            </div>
-            <QuickActions onImportClick={() => setImportModalOpen(true)} onTabChange={setActiveTab} />
-            <InsightsPanel products={data.products} />
-          </div>
-        )}
-
-        {/* Phase 4: Orders tab */}
-        {activeTab === "orders" && (
-          <div className="space-y-8 animate-fade-in">
-            {/* Header */}
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                Procurement
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+              {/* Status badge */}
+              <div className="inline-flex items-center gap-2 w-fit px-3 py-1.5 rounded-full bg-[#111113] border border-[#27272a]">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34d399] opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#34d399]" />
+                </span>
+                <span className="text-[11px] text-[#71717a]">All systems operational</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                Purchase Orders
-              </h2>
-              <p className="text-sm sm:text-base text-muted max-w-2xl">
-                Create and track purchase orders, receive stock from suppliers, and act on reorder recommendations.
-              </p>
             </div>
 
-            {/* KPI cards */}
-            <POStats />
-
-            {/* PO list */}
-            <PurchaseOrderList
-              onView={(id) => setPODetailId(id)}
-              onCreate={() => {
-                setEditingPO(null);
-                setPOModalPrefill(null);
-                setPOModalOpen(true);
-              }}
-              onDelete={handlePODelete}
-              refreshKey={poRefreshKey}
-            />
-
-            {/* Reorder suggestions */}
-            <ReorderSuggestions
-              onCreatePO={(item) => {
-                setEditingPO(null);
-                setPOModalPrefill({
-                  supplier_id:  item.supplier_id  ?? undefined,
-                  product_id:   item.id,
-                  product_name: item.name,
-                  quantity:     item.suggested_qty,
-                  unit_price:   item.cost_price   ?? undefined,
-                });
-                setPOModalOpen(true);
-                setActiveTab("orders");
-              }}
-            />
-          </div>
-        )}
-
-        {/* PHASE 8 START: Users tab — admin only */}
-        {activeTab === "users" && isAdmin && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-2">
-              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                User Management
-              </h2>
-              <p className="text-sm sm:text-base text-muted max-w-2xl">
-                Manage system accounts, assign roles, and control access permissions.
-              </p>
-            </div>
-            <UserManagement />
-          </div>
-        )}
-        {/* PHASE 8 END: Users tab */}
-
-        {/* Phase 3: Audit Log tab */}
-        {activeTab === "audit" && (
-          <div className="space-y-8 animate-fade-in">
-            {/* Header */}
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#18181b] text-white border border-[#27272a]">
-                Audit Trail
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+            {/* Link columns */}
+            <div className="grid grid-cols-3 gap-8 sm:gap-14">
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#52525b]">Product</p>
+                <ul className="space-y-2.5">
+                  {["Dashboard", "Inventory", "Analytics", "Integrations"].map((item) => (
+                    <li key={item}>
+                      <Link href="/login" className="text-xs text-[#71717a] hover:text-white transition-colors duration-200">
+                        {item}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h2 className="text-3xl sm:text-4xl text-gradient font-(--font-display)">
-                Activity Log
-              </h2>
-              <p className="text-sm sm:text-base text-muted max-w-2xl">
-                Complete history of all create, update, delete, and stock adjustment operations.
-              </p>
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#52525b]">Company</p>
+                <ul className="space-y-2.5">
+                  {["About", "Blog", "Careers", "Contact"].map((item) => (
+                    <li key={item}>
+                      <Link href="/login" className="text-xs text-[#71717a] hover:text-white transition-colors duration-200">
+                        {item}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#52525b]">Legal</p>
+                <ul className="space-y-2.5">
+                  {["Privacy", "Terms", "Security", "GDPR"].map((item) => (
+                    <li key={item}>
+                      <Link href="/login" className="text-xs text-[#71717a] hover:text-white transition-colors duration-200">
+                        {item}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-
-            {/* Full audit table */}
-            <AuditLog />
           </div>
-        )}
-            {/* Footer */}
-            <footer className="mt-10 border-t border-[#27272a] py-5">
-              <p className="text-xs text-[#71717a] text-center">
-                Obsidian © {new Date().getFullYear()} — Inventory Suite
-              </p>
-            </footer>
+
+          {/* Divider */}
+          <div className="mt-10 mb-6 h-px bg-gradient-to-r from-transparent via-[#27272a] to-transparent" />
+
+          {/* Bottom bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#52525b]">
+            <span>© {new Date().getFullYear()} Obsidian Inventory Suite. All rights reserved.</span>
+            <span className="text-[#3f3f46]">
+              {loading ? "" : user ? `Signed in as ${user.email}` : "Crafted with precision"}
+            </span>
           </div>
-        </main>
-      </div>
-
-      {/* Modals */}
-      <ProductModal
-        isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingProduct(null);
-          setPendingSupplierLink(null);
-        }}
-        onSubmit={handleSubmit}
-        product={editingProduct}
-        loading={modalLoading}
-        // Phase 2: store supplier selection so handleSubmit can link after save
-        onSupplierLink={(productId, supplierId, costPrice, leadDays) => {
-          setPendingSupplierLink({ supplierId, costPrice, leadDays });
-        }}
-      />
-
-      <StockAdjustModal
-        isOpen={stockAdjustOpen}
-        onClose={() => {
-          setStockAdjustOpen(false);
-          setStockAdjustProductId(null);
-        }}
-        onAdjusted={fetchProducts}
-        defaultProductId={stockAdjustProductId}
-      />
-
-      <DeleteConfirmModal
-        isOpen={!!deleteProduct}
-        productName={deleteProduct?.name || ""}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteProduct(null)}
-        loading={deleteLoading}
-      />
-
-      {/* Phase 2: Supplier create/edit modal */}
-      <SupplierModal
-        isOpen={supplierModalOpen}
-        onClose={() => {
-          setSupplierModalOpen(false);
-          setEditingSupplier(null);
-        }}
-        onSubmit={handleSupplierSubmit}
-        supplier={editingSupplier}
-        loading={supplierModalLoading}
-      />
-
-      {/* Phase 4: Purchase Order create/edit modal */}
-      <PurchaseOrderModal
-        isOpen={poModalOpen}
-        onClose={() => {
-          setPOModalOpen(false);
-          setEditingPO(null);
-          setPOModalPrefill(null);
-        }}
-        onSubmit={handlePOSubmit}
-        order={editingPO}
-        loading={poModalLoading}
-        prefill={poModalPrefill}
-      />
-
-      {/* Phase 4: Purchase Order detail modal */}
-      <PurchaseOrderDetail
-        poId={poDetailId}
-        onClose={() => setPODetailId(null)}
-        onEdit={(po) => {
-          setPODetailId(null);
-          setEditingPO(po);
-          setPOModalOpen(true);
-        }}
-        onRefresh={() => setPORefreshKey((k) => k + 1)}
-      />
-
-      {/* PHASE 6 IMPLEMENTATION START — Batch import modal */}
-      {importModalOpen && (
-        <ImportModal
-          onClose={() => setImportModalOpen(false)}
-          onImportSuccess={() => {
-            setImportModalOpen(false);
-            fetchProducts();
-          }}
-        />
-      )}
-      {/* PHASE 6 IMPLEMENTATION END */}
+        </div>
+      </footer>
     </div>
-  );
-}
-
-export default function Page() {
-  return (
-    <ToastProvider>
-      <Dashboard />
-    </ToastProvider>
   );
 }

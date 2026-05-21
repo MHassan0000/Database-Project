@@ -56,8 +56,8 @@ export async function PATCH(
 
     // Verify image belongs to product
     const imgCheck = await query(
-      "SELECT * FROM product_images WHERE id = $1 AND product_id = $2",
-      [imgId, productId]
+      "SELECT * FROM product_images WHERE id = $1 AND product_id = $2 AND tenant_id = $3",
+      [imgId, productId, auth.user.tenant_id]
     );
     if (imgCheck.rows.length === 0) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
@@ -71,27 +71,29 @@ export async function PATCH(
     // If promoting to primary, clear existing primary first
     if (isPrimary && !current.is_primary) {
       await query(
-        "UPDATE product_images SET is_primary = false WHERE product_id = $1",
-        [productId]
+        "UPDATE product_images SET is_primary = false WHERE product_id = $1 AND tenant_id = $2",
+        [productId, auth.user.tenant_id]
       );
     }
 
     const result = await query(
       `UPDATE product_images
        SET alt_text = $1, sort_order = $2, is_primary = $3
-       WHERE id = $4 AND product_id = $5
+       WHERE id = $4 AND product_id = $5 AND tenant_id = $6
        RETURNING *`,
-      [altText, sortOrder, isPrimary, imgId, productId]
+      [altText, sortOrder, isPrimary, imgId, productId, auth.user.tenant_id]
     );
 
     // Audit
-    const prodRow = await query("SELECT name FROM products WHERE id = $1", [productId]);
+    const prodRow = await query("SELECT name FROM products WHERE id = $1 AND tenant_id = $2", [productId, auth.user.tenant_id]);
     await logAudit({
       action:     "image_update",
       entityType: "product",
       entityId:   productId,
       entityName: prodRow.rows[0]?.name ?? "Unknown",
       details:    { image_id: imgId, alt_text: altText, sort_order: sortOrder, is_primary: isPrimary },
+      tenantId: auth.user.tenant_id,
+      performedBy: auth.user.email,
     });
 
     return NextResponse.json({ image: result.rows[0] });
@@ -122,8 +124,8 @@ export async function DELETE(
 
     // Fetch image record
     const imgResult = await query(
-      "SELECT * FROM product_images WHERE id = $1 AND product_id = $2",
-      [imgId, productId]
+      "SELECT * FROM product_images WHERE id = $1 AND product_id = $2 AND tenant_id = $3",
+      [imgId, productId, auth.user.tenant_id]
     );
     if (imgResult.rows.length === 0) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
@@ -132,7 +134,7 @@ export async function DELETE(
     const wasPrimary = Boolean(img.is_primary);
 
     // Delete DB record
-    await query("DELETE FROM product_images WHERE id = $1", [imgId]);
+    await query("DELETE FROM product_images WHERE id = $1 AND tenant_id = $2", [imgId, auth.user.tenant_id]);
 
     // Delete physical files (non-fatal)
     if (img.url) {
@@ -147,26 +149,28 @@ export async function DELETE(
     // If deleted was primary, auto-promote next image
     if (wasPrimary) {
       const remaining = await query(
-        `SELECT id FROM product_images WHERE product_id = $1
+        `SELECT id FROM product_images WHERE product_id = $1 AND tenant_id = $2
          ORDER BY sort_order ASC, created_at ASC LIMIT 1`,
-        [productId]
+        [productId, auth.user.tenant_id]
       );
       if (remaining.rows.length > 0) {
-        await query(
-          "UPDATE product_images SET is_primary = true WHERE id = $1",
-          [remaining.rows[0].id]
-        );
+          await query(
+            "UPDATE product_images SET is_primary = true WHERE id = $1 AND tenant_id = $2",
+            [remaining.rows[0].id, auth.user.tenant_id]
+          );
       }
     }
 
     // Audit
-    const prodRow = await query("SELECT name FROM products WHERE id = $1", [productId]);
+    const prodRow = await query("SELECT name FROM products WHERE id = $1 AND tenant_id = $2", [productId, auth.user.tenant_id]);
     await logAudit({
       action:     "image_delete",
       entityType: "product",
       entityId:   productId,
       entityName: prodRow.rows[0]?.name ?? "Unknown",
       details:    { image_id: imgId, was_primary: wasPrimary },
+      tenantId: auth.user.tenant_id,
+      performedBy: auth.user.email,
     });
 
     return NextResponse.json({ message: "Image deleted successfully" });

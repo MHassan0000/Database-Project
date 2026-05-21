@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // ── Fetch user ──────────────────────────────────────────────────────────────
     const result = await query(
-      `SELECT id, name, email, password_hash, role, avatar_url, is_active,
+      `SELECT id, tenant_id, name, email, password_hash, role, avatar_url, is_active,
               last_login, created_at, updated_at
          FROM users
         WHERE email = $1`,

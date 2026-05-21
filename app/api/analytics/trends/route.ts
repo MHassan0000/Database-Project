@@ -29,10 +29,11 @@ export async function GET(request: NextRequest) {
            SUM(CASE WHEN delta < 0 THEN ABS(delta) ELSE 0 END) AS outbound,
            COUNT(*)                                            AS movements
          FROM stock_movements
-         WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL
+         WHERE tenant_id = $1
+           AND created_at >= NOW() - ($2 || ' days')::INTERVAL
          GROUP BY DATE_TRUNC('week', created_at)
          ORDER BY date ASC`,
-        [days]
+        [auth.user.tenant_id, days]
       );
       return NextResponse.json({ period, groupBy: "week", data: result.rows });
     }
@@ -45,10 +46,11 @@ export async function GET(request: NextRequest) {
          SUM(CASE WHEN delta < 0 THEN ABS(delta) ELSE 0 END)  AS outbound,
          COUNT(*)                                              AS movements
        FROM stock_movements
-       WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL
+       WHERE tenant_id = $1
+         AND created_at >= NOW() - ($2 || ' days')::INTERVAL
        GROUP BY DATE(created_at)
        ORDER BY date ASC`,
-      [days]
+      [auth.user.tenant_id, days]
     );
 
     // Fill missing dates with zeros for a continuous chart

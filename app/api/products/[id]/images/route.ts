@@ -45,7 +45,7 @@ export async function GET(
       return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
     }
 
-    const productCheck = await query("SELECT id FROM products WHERE id = $1", [productId]);
+    const productCheck = await query("SELECT id FROM products WHERE id = $1 AND tenant_id = $2", [productId, auth.user.tenant_id]);
     if (productCheck.rows.length === 0) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
@@ -53,9 +53,9 @@ export async function GET(
     const result = await query(
       `SELECT id, product_id, url, thumbnail_url, alt_text, sort_order, is_primary, created_at
        FROM product_images
-       WHERE product_id = $1
+       WHERE product_id = $1 AND tenant_id = $2
        ORDER BY is_primary DESC, sort_order ASC, created_at ASC`,
-      [productId]
+      [productId, auth.user.tenant_id]
     );
 
     return NextResponse.json({ images: result.rows });
@@ -84,8 +84,8 @@ export async function POST(
 
     // Verify product exists
     const productCheck = await query(
-      "SELECT id, name FROM products WHERE id = $1",
-      [productId]
+      "SELECT id, name FROM products WHERE id = $1 AND tenant_id = $2",
+      [productId, auth.user.tenant_id]
     );
     if (productCheck.rows.length === 0) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -166,33 +166,33 @@ export async function POST(
 
     // Determine if this is the first image (auto-set as primary)
     const countResult = await query(
-      "SELECT COUNT(*) FROM product_images WHERE product_id = $1",
-      [productId]
+      "SELECT COUNT(*) FROM product_images WHERE product_id = $1 AND tenant_id = $2",
+      [productId, auth.user.tenant_id]
     );
     const isPrimary = parseInt(countResult.rows[0].count) === 0;
 
     // If primary, unset any existing primary first
     if (isPrimary) {
       await query(
-        "UPDATE product_images SET is_primary = false WHERE product_id = $1",
-        [productId]
+        "UPDATE product_images SET is_primary = false WHERE product_id = $1 AND tenant_id = $2",
+        [productId, auth.user.tenant_id]
       );
     }
 
     // Compute next sort_order
     const sortResult = await query(
-      "SELECT COALESCE(MAX(sort_order), -1) AS max_sort FROM product_images WHERE product_id = $1",
-      [productId]
+      "SELECT COALESCE(MAX(sort_order), -1) AS max_sort FROM product_images WHERE product_id = $1 AND tenant_id = $2",
+      [productId, auth.user.tenant_id]
     );
     const nextSort = parseInt(sortResult.rows[0].max_sort) + 1;
 
     // Insert record
     const insertResult = await query(
       `INSERT INTO product_images
-         (product_id, url, thumbnail_url, alt_text, sort_order, is_primary)
-       VALUES ($1, $2, $3, $4, $5, $6)
+         (tenant_id, product_id, url, thumbnail_url, alt_text, sort_order, is_primary)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [productId, fullUrl, thumbUrl, altText, nextSort, isPrimary]
+      [auth.user.tenant_id, productId, fullUrl, thumbUrl, altText, nextSort, isPrimary]
     );
 
     const created = insertResult.rows[0];
@@ -204,6 +204,8 @@ export async function POST(
       entityId:   productId,
       entityName: productName,
       details:    { image_id: created.id, filename: filenameFull, is_primary: isPrimary },
+      tenantId: auth.user.tenant_id,
+      performedBy: auth.user.email,
     });
 
     return NextResponse.json({ image: created }, { status: 201 });

@@ -202,6 +202,7 @@ export type UserRole = "admin" | "manager" | "viewer";
 
 export interface User {
   id: number;
+  tenant_id: number;
   name: string;
   email: string;
   password_hash: string;
@@ -216,6 +217,7 @@ export interface User {
 /** Safe user object — password_hash excluded for client-facing usage */
 export interface SafeUser {
   id: number;
+  tenant_id: number;
   name: string;
   email: string;
   role: UserRole;
@@ -233,6 +235,15 @@ export interface UserFormData {
   role?: UserRole;
   avatar_url?: string;
   is_active?: boolean;
+}
+
+// ── Tenants ─────────────────────────────────────────────────────────────────
+
+export interface Tenant {
+  id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // ── Sessions ──────────────────────────────────────────────────────────────

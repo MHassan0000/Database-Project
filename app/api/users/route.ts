@@ -22,13 +22,14 @@ export async function GET(request: NextRequest) {
 
     const [usersResult, countResult] = await Promise.all([
       query(
-        `SELECT id, name, email, role, avatar_url, is_active, last_login, created_at, updated_at
+        `SELECT id, tenant_id, name, email, role, avatar_url, is_active, last_login, created_at, updated_at
            FROM users
+          WHERE tenant_id = $1
           ORDER BY created_at DESC
-          LIMIT $1 OFFSET $2`,
-        [limit, offset]
+          LIMIT $2 OFFSET $3`,
+        [auth.user.tenant_id, limit, offset]
       ),
-      query("SELECT COUNT(*) AS total FROM users"),
+      query("SELECT COUNT(*) AS total FROM users WHERE tenant_id = $1", [auth.user.tenant_id]),
     ]);
 
     const total = parseInt(countResult.rows[0].total);
@@ -84,7 +85,8 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Duplicate check ─────────────────────────────────────────────────────────
-    const existing = await query("SELECT id FROM users WHERE email = $1", [
+    const existing = await query("SELECT id FROM users WHERE tenant_id = $1 AND email = $2", [
+      auth.user.tenant_id,
       email.trim().toLowerCase(),
     ]);
     if (existing.rows.length > 0) {
@@ -97,10 +99,10 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12);
 
     const result = await query(
-      `INSERT INTO users (name, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role, avatar_url, is_active, last_login, created_at, updated_at`,
-      [name.trim(), email.trim().toLowerCase(), passwordHash, role]
+      `INSERT INTO users (tenant_id, name, email, password_hash, role)
+         VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, tenant_id, name, email, role, avatar_url, is_active, last_login, created_at, updated_at`,
+      [auth.user.tenant_id, name.trim(), email.trim().toLowerCase(), passwordHash, role]
     );
     const newUser = result.rows[0];
 
@@ -112,6 +114,7 @@ export async function POST(request: NextRequest) {
       details: { role, createdBy: auth.user.email },
       performedBy: auth.user.email,
       ipAddress: request.headers.get("x-forwarded-for") ?? null,
+      tenantId: auth.user.tenant_id,
     });
 
     return Response.json({ user: newUser }, { status: 201 });

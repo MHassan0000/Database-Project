@@ -33,8 +33,9 @@ export async function GET(request: NextRequest) {
              ORDER BY sm.created_at DESC
            )                                                   AS rn
          FROM stock_movements sm
-         JOIN products p ON p.id = sm.product_id
-         WHERE sm.created_at >= NOW() - ($1 || ' days')::INTERVAL
+         JOIN products p ON p.id = sm.product_id AND p.tenant_id = sm.tenant_id
+         WHERE sm.tenant_id = $1
+           AND sm.created_at >= NOW() - ($2 || ' days')::INTERVAL
        )
        SELECT
          snap_date                                             AS date,
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
        WHERE rn = 1
        GROUP BY snap_date
        ORDER BY snap_date ASC`,
-      [days]
+      [auth.user.tenant_id, days]
     );
 
     // Current live total value
@@ -53,7 +54,8 @@ export async function GET(request: NextRequest) {
          ROUND(SUM(stock * price)::NUMERIC, 2) AS current_value,
          COUNT(*)                               AS product_count
        FROM products
-       WHERE status = 'active'`
+       WHERE tenant_id = $1 AND status = 'active'`,
+      [auth.user.tenant_id]
     );
 
     return NextResponse.json({

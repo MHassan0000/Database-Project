@@ -18,13 +18,17 @@ export async function GET(request: NextRequest) {
          COUNT(*) AS total,
          COUNT(*) FILTER (WHERE status = 'active')   AS active,
          COUNT(*) FILTER (WHERE status = 'inactive') AS inactive
-       FROM suppliers`
+       FROM suppliers
+       WHERE tenant_id = $1`,
+      [auth.user.tenant_id]
     );
 
     // Average lead time across all product-supplier links
     const leadTimeResult = await query(
       `SELECT ROUND(AVG(lead_days), 1) AS avg_lead_days
-       FROM product_suppliers`
+       FROM product_suppliers
+       WHERE tenant_id = $1`,
+      [auth.user.tenant_id]
     );
 
     // Top 5 suppliers by number of linked products
@@ -36,15 +40,18 @@ export async function GET(request: NextRequest) {
          s.rating,
          COUNT(ps.product_id) AS linked_products
        FROM suppliers s
-       LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id
+       LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.tenant_id = s.tenant_id
+       WHERE s.tenant_id = $1
        GROUP BY s.id
        ORDER BY linked_products DESC
-       LIMIT 5`
+       LIMIT 5`,
+      [auth.user.tenant_id]
     );
 
     // Average supplier rating
     const ratingResult = await query(
-      `SELECT ROUND(AVG(rating), 2) AS avg_rating FROM suppliers`
+      `SELECT ROUND(AVG(rating), 2) AS avg_rating FROM suppliers WHERE tenant_id = $1`,
+      [auth.user.tenant_id]
     );
 
     const stats = countResult.rows[0];

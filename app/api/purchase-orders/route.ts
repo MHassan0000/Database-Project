@@ -69,12 +69,15 @@ export async function GET(request: NextRequest) {
     const whereClause = conditions.length > 0
       ? `WHERE ${conditions.join(" AND ")}`
       : "";
+    const tenantClause = whereClause
+      ? `${whereClause} AND po.tenant_id = $${idx}`
+      : `WHERE po.tenant_id = $${idx}`;
 
     const countResult = await query(
       `SELECT COUNT(*) FROM purchase_orders po
-       LEFT JOIN suppliers s ON s.id = po.supplier_id
-       ${whereClause}`,
-      params
+       LEFT JOIN suppliers s ON s.id = po.supplier_id AND s.tenant_id = po.tenant_id
+       ${tenantClause}`,
+      [...params, auth.user.tenant_id]
     );
     const total = parseInt(countResult.rows[0].count, 10);
 
@@ -84,13 +87,13 @@ export async function GET(request: NextRequest) {
          s.name AS supplier_name,
          COUNT(poi.id) AS item_count
        FROM purchase_orders po
-       LEFT JOIN suppliers s ON s.id = po.supplier_id
-       LEFT JOIN purchase_order_items poi ON poi.order_id = po.id
-       ${whereClause}
+       LEFT JOIN suppliers s ON s.id = po.supplier_id AND s.tenant_id = po.tenant_id
+       LEFT JOIN purchase_order_items poi ON poi.order_id = po.id AND poi.tenant_id = po.tenant_id
+       ${tenantClause}
        GROUP BY po.id, s.name
        ORDER BY po.created_at DESC
-       LIMIT $${idx} OFFSET $${idx + 1}`,
-      [...params, limit, offset]
+       LIMIT $${idx + 1} OFFSET $${idx + 2}`,
+      [...params, auth.user.tenant_id, limit, offset]
     );
 
     return NextResponse.json({
@@ -151,11 +154,22 @@ export async function POST(request: NextRequest) {
 
     // Verify supplier exists
     const supplierCheck = await query(
-      `SELECT id, name FROM suppliers WHERE id = $1`,
-      [Number(supplier_id)]
+      `SELECT id, name FROM suppliers WHERE id = $1 AND tenant_id = $2`,
+      [Number(supplier_id), auth.user.tenant_id]
     );
     if (supplierCheck.rows.length === 0) {
       return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
+    }
+
+    const productIds = Array.from(
+      new Set(items.map((item) => Number(item.product_id)))
+    );
+    const productCheck = await query(
+      "SELECT id FROM products WHERE tenant_id = $1 AND id = ANY($2::int[])",
+      [auth.user.tenant_id, productIds]
+    );
+    if (productCheck.rows.length !== productIds.length) {
+      return NextResponse.json({ error: "One or more products not found." }, { status: 404 });
     }
 
     // Compute totals
@@ -171,10 +185,11 @@ export async function POST(request: NextRequest) {
       // Insert PO header
       const poResult = await client.query(
         `INSERT INTO purchase_orders
-           (supplier_id, status, expected_date, notes, subtotal, tax, total)
-         VALUES ($1, 'draft', $2, $3, $4, $5, $6)
+           (tenant_id, supplier_id, status, expected_date, notes, subtotal, tax, total)
+         VALUES ($1, $2, 'draft', $3, $4, $5, $6, $7)
          RETURNING *`,
         [
+          auth.user.tenant_id,
           Number(supplier_id),
           expected_date || null,
           notes || "",
@@ -189,9 +204,10 @@ export async function POST(request: NextRequest) {
       for (const item of items) {
         await client.query(
           `INSERT INTO purchase_order_items
-             (order_id, product_id, quantity, unit_price)
-           VALUES ($1, $2, $3, $4)`,
+             (tenant_id, order_id, product_id, quantity, unit_price)
+           VALUES ($1, $2, $3, $4, $5)`,
           [
+            auth.user.tenant_id,
             po.id,
             Number(item.product_id),
             Number(item.quantity),
@@ -217,7 +233,8 @@ export async function POST(request: NextRequest) {
         tax: taxNum,
         total,
       },
-      performedBy: "system",
+      performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return NextResponse.json(newPO, { status: 201 });

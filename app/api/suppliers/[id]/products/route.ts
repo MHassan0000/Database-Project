@@ -24,8 +24,8 @@ export async function POST(
 
     // Confirm supplier exists
     const supplierExists = await query(
-      `SELECT id FROM suppliers WHERE id = $1`,
-      [supplierId]
+      `SELECT id FROM suppliers WHERE id = $1 AND tenant_id = $2`,
+      [supplierId, auth.user.tenant_id]
     );
     if (supplierExists.rows.length === 0) {
       return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
@@ -51,8 +51,8 @@ export async function POST(
 
     // Confirm product exists
     const productExists = await query(
-      `SELECT id FROM products WHERE id = $1`,
-      [Number(product_id)]
+      `SELECT id FROM products WHERE id = $1 AND tenant_id = $2`,
+      [Number(product_id), auth.user.tenant_id]
     );
     if (productExists.rows.length === 0) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -61,16 +61,16 @@ export async function POST(
     // If setting is_primary=true, unset any existing primary for this product
     if (is_primary) {
       await query(
-        `UPDATE product_suppliers SET is_primary = false WHERE product_id = $1`,
-        [Number(product_id)]
+        `UPDATE product_suppliers SET is_primary = false WHERE product_id = $1 AND tenant_id = $2`,
+        [Number(product_id), auth.user.tenant_id]
       );
     }
 
     // Upsert link (unique constraint on product_id+supplier_id)
     const result = await query(
       `INSERT INTO product_suppliers
-         (product_id, supplier_id, cost_price, lead_days, is_primary, min_order_qty)
-       VALUES ($1, $2, $3, $4, $5, $6)
+         (tenant_id, product_id, supplier_id, cost_price, lead_days, is_primary, min_order_qty)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (product_id, supplier_id) DO UPDATE
          SET cost_price    = EXCLUDED.cost_price,
              lead_days     = EXCLUDED.lead_days,
@@ -78,6 +78,7 @@ export async function POST(
              min_order_qty = EXCLUDED.min_order_qty
        RETURNING *`,
       [
+        auth.user.tenant_id,
         Number(product_id),
         supplierId,
         costPriceNum,

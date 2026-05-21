@@ -286,7 +286,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Load all existing SKUs from DB for uniqueness check
-    const skuResult   = await query("SELECT LOWER(sku) AS sku FROM products WHERE sku IS NOT NULL AND sku <> ''");
+    const skuResult   = await query(
+      "SELECT LOWER(sku) AS sku FROM products WHERE tenant_id = $1 AND sku IS NOT NULL AND sku <> ''",
+      [auth.user.tenant_id]
+    );
     const existingSkus = new Set<string>(skuResult.rows.map((r: { sku: string }) => r.sku));
     const batchSkus    = new Set<string>();
 

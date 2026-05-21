@@ -37,14 +37,15 @@ export async function GET(request: NextRequest) {
          s.status AS supplier_status
        FROM products p
        LEFT JOIN product_suppliers ps
-         ON ps.product_id = p.id AND ps.is_primary = true
+         ON ps.product_id = p.id AND ps.tenant_id = p.tenant_id AND ps.is_primary = true
        LEFT JOIN suppliers s
-         ON s.id = ps.supplier_id
-       WHERE p.stock <= p.reorder_point
+         ON s.id = ps.supplier_id AND s.tenant_id = p.tenant_id
+       WHERE p.tenant_id = $1
+         AND p.stock <= p.reorder_point
          AND p.status = 'active'
        ORDER BY (p.reorder_point - p.stock) DESC, p.stock ASC
-       LIMIT $1`,
-      [limit]
+       LIMIT $2`,
+      [auth.user.tenant_id, limit]
     );
 
     // Compute suggested order quantity: reorder_qty or (reorder_point - stock + reorder_qty)

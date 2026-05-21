@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ignore — cookie will be cleared by the server regardless
     }
     setUser(null);
-    router.push("/login");
+    router.push("/");
   }, [router]);
 
   return (

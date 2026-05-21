@@ -35,9 +35,9 @@ export async function GET(
       `SELECT po.*, s.name AS supplier_name, s.email AS supplier_email,
               s.phone AS supplier_phone, s.contact_person AS supplier_contact
        FROM purchase_orders po
-       JOIN suppliers s ON s.id = po.supplier_id
-       WHERE po.id = $1`,
-      [poId]
+       JOIN suppliers s ON s.id = po.supplier_id AND s.tenant_id = po.tenant_id
+       WHERE po.id = $1 AND po.tenant_id = $2`,
+      [poId, auth.user.tenant_id]
     );
     if (poResult.rows.length === 0) {
       return NextResponse.json({ error: "Purchase order not found" }, { status: 404 });
@@ -51,10 +51,10 @@ export async function GET(
               p.stock AS current_stock,
               p.category AS product_category
        FROM purchase_order_items poi
-       JOIN products p ON p.id = poi.product_id
-       WHERE poi.order_id = $1
+       JOIN products p ON p.id = poi.product_id AND p.tenant_id = poi.tenant_id
+       WHERE poi.order_id = $1 AND poi.tenant_id = $2
        ORDER BY poi.id ASC`,
-      [poId]
+      [poId, auth.user.tenant_id]
     );
 
     return NextResponse.json({
@@ -90,8 +90,8 @@ export async function PUT(
 
     // Confirm exists and is draft
     const existing = await query(
-      `SELECT id, status FROM purchase_orders WHERE id = $1`,
-      [poId]
+      `SELECT id, status FROM purchase_orders WHERE id = $1 AND tenant_id = $2`,
+      [poId, auth.user.tenant_id]
     );
     if (existing.rows.length === 0) {
       return NextResponse.json({ error: "Purchase order not found" }, { status: 404 });
@@ -130,6 +130,17 @@ export async function PUT(
       }
     }
 
+    const productIds = Array.from(
+      new Set(items.map((item) => Number(item.product_id)))
+    );
+    const productCheck = await query(
+      "SELECT id FROM products WHERE tenant_id = $1 AND id = ANY($2::int[])",
+      [auth.user.tenant_id, productIds]
+    );
+    if (productCheck.rows.length !== productIds.length) {
+      return NextResponse.json({ error: "One or more products not found." }, { status: 404 });
+    }
+
     const taxNum = Math.max(0, Number(tax ?? 0));
     const subtotal = items.reduce(
       (sum, item) => sum + Number(item.quantity) * Number(item.unit_price),
@@ -143,7 +154,7 @@ export async function PUT(
         `UPDATE purchase_orders
          SET supplier_id=$1, expected_date=$2, notes=$3,
              subtotal=$4, tax=$5, total=$6
-         WHERE id=$7
+         WHERE id=$7 AND tenant_id = $8
          RETURNING *`,
         [
           Number(supplier_id),
@@ -153,19 +164,21 @@ export async function PUT(
           taxNum.toFixed(2),
           total.toFixed(2),
           poId,
+          auth.user.tenant_id,
         ]
       );
 
       // Replace line items
       await client.query(
-        `DELETE FROM purchase_order_items WHERE order_id = $1`,
-        [poId]
+        `DELETE FROM purchase_order_items WHERE order_id = $1 AND tenant_id = $2`,
+        [poId, auth.user.tenant_id]
       );
       for (const item of items) {
         await client.query(
-          `INSERT INTO purchase_order_items (order_id, product_id, quantity, unit_price)
-           VALUES ($1, $2, $3, $4)`,
+          `INSERT INTO purchase_order_items (tenant_id, order_id, product_id, quantity, unit_price)
+           VALUES ($1, $2, $3, $4, $5)`,
           [
+            auth.user.tenant_id,
             poId,
             Number(item.product_id),
             Number(item.quantity),
@@ -183,7 +196,8 @@ export async function PUT(
       entityId: poId,
       entityName: `PO #${poId}`,
       details: { supplier_id: Number(supplier_id), item_count: items.length, total },
-      performedBy: "system",
+      performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return NextResponse.json(updatedPO);
@@ -215,8 +229,8 @@ export async function DELETE(
     }
 
     const existing = await query(
-      `SELECT id, status FROM purchase_orders WHERE id = $1`,
-      [poId]
+      `SELECT id, status FROM purchase_orders WHERE id = $1 AND tenant_id = $2`,
+      [poId, auth.user.tenant_id]
     );
     if (existing.rows.length === 0) {
       return NextResponse.json({ error: "Purchase order not found" }, { status: 404 });
@@ -229,8 +243,8 @@ export async function DELETE(
     }
 
     const deleted = await query(
-      `DELETE FROM purchase_orders WHERE id = $1 RETURNING *`,
-      [poId]
+      `DELETE FROM purchase_orders WHERE id = $1 AND tenant_id = $2 RETURNING *`,
+      [poId, auth.user.tenant_id]
     );
 
     await logAudit({
@@ -239,7 +253,8 @@ export async function DELETE(
       entityId: poId,
       entityName: `PO #${poId}`,
       details: { status: "draft" },
-      performedBy: "system",
+      performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return NextResponse.json({ deleted: deleted.rows[0] });

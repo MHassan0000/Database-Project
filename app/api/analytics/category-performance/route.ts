@@ -30,9 +30,11 @@ export async function GET(request: NextRequest) {
          ROUND(AVG(p.price)::NUMERIC, 2)                     AS avg_price,
          ROUND(AVG(p.rating)::NUMERIC, 2)                    AS avg_rating
        FROM products p
-       WHERE p.status = 'active'
+       WHERE p.tenant_id = $1
+         AND p.status = 'active'
        GROUP BY COALESCE(p.category, 'Uncategorised')
-       ORDER BY total_value DESC`
+       ORDER BY total_value DESC`,
+      [auth.user.tenant_id]
     );
 
     // Movement stats per category for the period
@@ -43,10 +45,11 @@ export async function GET(request: NextRequest) {
          SUM(CASE WHEN sm.delta > 0 THEN sm.delta ELSE 0 END) AS inbound,
          SUM(CASE WHEN sm.delta < 0 THEN ABS(sm.delta) ELSE 0 END) AS outbound
        FROM stock_movements sm
-       JOIN products p ON p.id = sm.product_id
-       WHERE sm.created_at >= NOW() - ($1 || ' days')::INTERVAL
+       JOIN products p ON p.id = sm.product_id AND p.tenant_id = sm.tenant_id
+       WHERE sm.tenant_id = $1
+         AND sm.created_at >= NOW() - ($2 || ' days')::INTERVAL
        GROUP BY COALESCE(p.category, 'Uncategorised')`,
-      [days]
+      [auth.user.tenant_id, days]
     );
 
     const mvMap = new Map<string, { movements: number; inbound: number; outbound: number }>();

@@ -33,8 +33,8 @@ export async function GET(
 
     // Fetch supplier
     const supplierResult = await query(
-      `SELECT * FROM suppliers WHERE id = $1`,
-      [supplierId]
+      `SELECT * FROM suppliers WHERE id = $1 AND tenant_id = $2`,
+      [supplierId, auth.user.tenant_id]
     );
     if (supplierResult.rows.length === 0) {
       return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
@@ -58,10 +58,10 @@ export async function GET(
          p.status,
          p.brand
        FROM product_suppliers ps
-       JOIN products p ON p.id = ps.product_id
-       WHERE ps.supplier_id = $1
+       JOIN products p ON p.id = ps.product_id AND p.tenant_id = ps.tenant_id
+       WHERE ps.supplier_id = $1 AND ps.tenant_id = $2
        ORDER BY ps.is_primary DESC, p.name ASC`,
-      [supplierId]
+      [supplierId, auth.user.tenant_id]
     );
 
     return NextResponse.json({
@@ -96,8 +96,8 @@ export async function PUT(
 
     // Confirm exists
     const existing = await query(
-      `SELECT id FROM suppliers WHERE id = $1`,
-      [supplierId]
+      `SELECT id FROM suppliers WHERE id = $1 AND tenant_id = $2`,
+      [supplierId, auth.user.tenant_id]
     );
     if (existing.rows.length === 0) {
       return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
@@ -133,7 +133,7 @@ export async function PUT(
       `UPDATE suppliers
        SET name=$1, email=$2, phone=$3, address=$4, website=$5,
            contact_person=$6, rating=$7, status=$8, notes=$9
-       WHERE id=$10
+       WHERE id=$10 AND tenant_id = $11
        RETURNING *`,
       [
         name.trim(),
@@ -146,8 +146,13 @@ export async function PUT(
         safeStatus,
         notes || "",
         supplierId,
+        auth.user.tenant_id,
       ]
     );
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
+    }
 
     const updated = result.rows[0];
 
@@ -163,6 +168,7 @@ export async function PUT(
         email: updated.email,
       },
       performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return NextResponse.json(updated);
@@ -194,8 +200,8 @@ export async function DELETE(
 
     // Confirm exists
     const existing = await query(
-      `SELECT id FROM suppliers WHERE id = $1`,
-      [supplierId]
+      `SELECT id FROM suppliers WHERE id = $1 AND tenant_id = $2`,
+      [supplierId, auth.user.tenant_id]
     );
     if (existing.rows.length === 0) {
       return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
@@ -205,8 +211,8 @@ export async function DELETE(
     // TODO: purchase_orders table checked here — populated in Phase 4
     const activePOResult = await query(
       `SELECT COUNT(*) FROM purchase_orders
-       WHERE supplier_id = $1 AND status NOT IN ('cancelled')`,
-      [supplierId]
+       WHERE supplier_id = $1 AND tenant_id = $2 AND status NOT IN ('cancelled')`,
+      [supplierId, auth.user.tenant_id]
     );
     const activePOCount = parseInt(activePOResult.rows[0].count, 10);
     if (activePOCount > 0) {
@@ -219,9 +225,13 @@ export async function DELETE(
     }
 
     const deleted = await query(
-      `DELETE FROM suppliers WHERE id = $1 RETURNING *`,
-      [supplierId]
+      `DELETE FROM suppliers WHERE id = $1 AND tenant_id = $2 RETURNING *`,
+      [supplierId, auth.user.tenant_id]
     );
+
+    if (deleted.rows.length === 0) {
+      return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
+    }
 
     const deletedSupplier = deleted.rows[0];
 
@@ -235,7 +245,8 @@ export async function DELETE(
         email: deletedSupplier.email,
         status: deletedSupplier.status,
       },
-      performedBy: "system",
+      performedBy: auth.user.email,
+      tenantId: auth.user.tenant_id,
     });
 
     return NextResponse.json({ deleted: deletedSupplier });
