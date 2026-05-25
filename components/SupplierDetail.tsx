@@ -9,9 +9,11 @@ import { Truck, Mail, Phone, Globe, MapPin, Star, Package, Trash2 } from "lucide
 
 interface SupplierDetailProps {
   supplierId: number;
-  onEdit: (supplier: Supplier) => void;
+  onEdit?: (supplier: Supplier) => void;
   onBack: () => void;
-  onUnlinkProduct: (productId: number) => void;
+  onUnlinkProduct?: (productId: number) => void;
+  canEdit?: boolean;
+  canUnlink?: boolean;
 }
 
 interface SupplierWithProducts extends Supplier {
@@ -39,7 +41,14 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
-export default function SupplierDetail({ supplierId, onEdit, onBack, onUnlinkProduct }: SupplierDetailProps) {
+export default function SupplierDetail({
+  supplierId,
+  onEdit,
+  onBack,
+  onUnlinkProduct,
+  canEdit = true,
+  canUnlink = true,
+}: SupplierDetailProps) {
   const [supplier, setSupplier] = useState<SupplierWithProducts | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +95,7 @@ export default function SupplierDetail({ supplierId, onEdit, onBack, onUnlinkPro
           ? { ...prev, linked_products: prev.linked_products.filter((p) => p.product_id !== productId) }
           : prev
       );
-      onUnlinkProduct(productId);
+      onUnlinkProduct?.(productId);
     } catch (err) {
       console.error(err);
     } finally {
@@ -150,12 +159,14 @@ export default function SupplierDetail({ supplierId, onEdit, onBack, onUnlinkPro
             </div>
           </div>
         </div>
-        <button
-          onClick={() => onEdit(supplier)}
-          className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-black hover:bg-zinc-200 transition-all"
-        >
-          Edit Supplier
-        </button>
+       {canEdit && onEdit && (
+         <button
+           onClick={() => onEdit(supplier)}
+           className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-black hover:bg-zinc-200 transition-all"
+         >
+           Edit Supplier
+         </button>
+       )}
       </div>
 
       {/* Info + Rating */}
@@ -233,14 +244,16 @@ export default function SupplierDetail({ supplierId, onEdit, onBack, onUnlinkPro
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleUnlink(p.product_id)}
-                        disabled={unlinkingId === p.product_id}
-                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all disabled:opacity-40"
-                        title="Unlink product"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                       {canUnlink && onUnlinkProduct && (
+                         <button
+                           onClick={() => handleUnlink(p.product_id)}
+                           disabled={unlinkingId === p.product_id}
+                           className="p-1.5 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all disabled:opacity-40"
+                           title="Unlink product"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </button>
+                       )}
                     </td>
                   </tr>
                 ))}

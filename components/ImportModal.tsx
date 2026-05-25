@@ -39,8 +39,8 @@ export default function ImportModal({ onClose, onImportSuccess }: ImportModalPro
       setUploadError("Only CSV files are supported. Please upload a .csv file.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("File is too large. Maximum allowed size is 5 MB.");
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError("File is too large. Maximum allowed size is 50 MB.");
       return;
     }
 
@@ -209,7 +209,7 @@ export default function ImportModal({ onClose, onImportSuccess }: ImportModalPro
                       <p className="text-sm font-semibold text-white">
                         {dragOver ? "Drop your CSV here" : "Drag & drop your CSV here"}
                       </p>
-                      <p className="text-xs text-[#71717a] mt-1">or click to browse — max 5 MB</p>
+                      <p className="text-xs text-[#71717a] mt-1">or click to browse — max 50 MB</p>
                     </div>
                   </>
                 )}

@@ -82,15 +82,21 @@ export default function ProductModal({
         sku: product.sku || "",
         status: product.status || "active",
       });
+      setSelectedSupplierId("");
+      setCostPrice("");
+      setLeadDays("7");
+      setSupplierError("");
     } else {
       setForm(emptyForm);
     }
     setErrors({});
     // Reset supplier fields on open
-    setSelectedSupplierId("");
-    setCostPrice("");
-    setLeadDays("7");
-    setSupplierError("");
+    if (!product) {
+      setSelectedSupplierId("");
+      setCostPrice("");
+      setLeadDays("7");
+      setSupplierError("");
+    }
   }, [product, isOpen]);
 
   const validate = (): boolean => {
@@ -123,14 +129,42 @@ export default function ProductModal({
         if (!cancelled && data.suppliers) setSuppliers(data.suppliers);
       })
       .catch(() => { /* non-fatal: supplier dropdown just stays empty */ });
+
+    if (!product?.id) {
+      return () => { cancelled = true; };
+    }
+
+     fetch(`/api/products/${product.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data && data.primary_supplier_id) {
+          setSelectedSupplierId(String(data.primary_supplier_id));
+          setCostPrice(data.primary_supplier_cost ?? "");
+          setLeadDays(data.primary_supplier_lead_days ?? "7");
+        }
+      })
+      .catch(() => { /* non-fatal: existing supplier link not shown */ });
+
     return () => { cancelled = true; };
-  }, [isOpen]);
+  }, [isOpen, product?.id]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
       onSubmit(form);
-      // Phase 2: supplier linking is handled by the parent after product ID is known
+      if (onSupplierLink) {
+        if (selectedSupplierId) {
+          onSupplierLink(
+            product?.id ?? 0,
+            Number(selectedSupplierId),
+            Number(costPrice || 0),
+            Number(leadDays || 7)
+          );
+        } else if (product?.id) {
+          onSupplierLink(product.id, 0, 0, 0);
+        }
+      }
     }
   };
 

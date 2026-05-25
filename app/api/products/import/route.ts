@@ -249,11 +249,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Size guard: 5 MB max
-    const MAX_BYTES = 5 * 1024 * 1024;
+    // Size guard: 50 MB max
+    const MAX_BYTES = 50 * 1024 * 1024;
     if (file.size > MAX_BYTES) {
       return NextResponse.json(
-        { error: "File too large. Maximum allowed size is 5 MB." },
+        { error: "File too large. Maximum allowed size is 50 MB." },
         { status: 400 }
       );
     }

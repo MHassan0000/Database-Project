@@ -20,7 +20,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // PHASE 8 START
-  const auth = await requireRole(request, ["admin", "manager"]);
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {

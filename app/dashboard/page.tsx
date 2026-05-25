@@ -89,6 +89,7 @@ function Dashboard() {
   // Stock adjust modal state
   const [stockAdjustOpen, setStockAdjustOpen] = useState(false);
   const [stockAdjustProductId, setStockAdjustProductId] = useState<number | null>(null);
+  const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
 
@@ -107,6 +108,7 @@ function Dashboard() {
     supplierId: number;
     costPrice: number;
     leadDays: number;
+    productId?: number;
   } | null>(null);
 
   // Phase 4: Purchase Order state
@@ -212,13 +214,15 @@ function Dashboard() {
       const savedProduct = await res.json();
 
       // Phase 2: link supplier if one was selected in ProductModal
-      if (pendingSupplierLink && savedProduct.id) {
+      if (pendingSupplierLink) {
+        const targetProductId = pendingSupplierLink.productId ?? savedProduct.id;
+        if (targetProductId && pendingSupplierLink.supplierId > 0) {
         try {
           await fetch(`/api/suppliers/${pendingSupplierLink.supplierId}/products`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              product_id: savedProduct.id,
+              product_id: targetProductId,
               cost_price: pendingSupplierLink.costPrice,
               lead_days: pendingSupplierLink.leadDays,
               is_primary: true,
@@ -227,6 +231,15 @@ function Dashboard() {
         } catch {
           // Non-fatal: product was saved, supplier link silently failed
           showToast("Product saved but supplier link failed", "error");
+        }
+        } else if (targetProductId) {
+          try {
+            await fetch(`/api/products/${targetProductId}/suppliers/primary`, {
+              method: "DELETE",
+            });
+          } catch {
+            showToast("Product saved but supplier unlink failed", "error");
+          }
         }
         setPendingSupplierLink(null);
       }
@@ -240,6 +253,7 @@ function Dashboard() {
       setModalOpen(false);
       setEditingProduct(null);
       fetchProducts();
+      setInventoryRefreshKey((k) => k + 1);
     } catch (err) {
       showToast(
         err instanceof Error ? err.message : "Something went wrong",
@@ -263,6 +277,7 @@ function Dashboard() {
       showToast("Product deleted successfully!", "success");
       setDeleteProduct(null);
       fetchProducts();
+      setInventoryRefreshKey((k) => k + 1);
     } catch {
       showToast("Failed to delete product", "error");
     } finally {
@@ -388,6 +403,7 @@ function Dashboard() {
       showToast(`Updated ${json.updated} products`, "success");
       setSelectedIds([]);
       fetchProducts();
+      setInventoryRefreshKey((k) => k + 1);
     } catch (error) {
       showToast(
         error instanceof Error ? error.message : "Bulk update failed",
@@ -412,6 +428,7 @@ function Dashboard() {
       showToast(`Deleted ${json.deleted} products`, "success");
       setSelectedIds([]);
       fetchProducts();
+      setInventoryRefreshKey((k) => k + 1);
     } catch (error) {
       showToast(
         error instanceof Error ? error.message : "Bulk delete failed",
@@ -472,10 +489,11 @@ function Dashboard() {
             <DashboardStats />
 
             <InventoryAlerts
-              onAdjustStock={(product) => {
+              onAdjustStock={isMgr ? (product) => {
                 setStockAdjustProductId(product.id);
                 setStockAdjustOpen(true);
-              }}
+              } : undefined}
+              refreshKey={inventoryRefreshKey}
             />
 
             <AdvancedCharts products={data.products} />
@@ -501,13 +519,15 @@ function Dashboard() {
 
 
 
-            <BulkActions
-              selectedCount={selectedIds.length}
-              onClear={() => setSelectedIds([])}
-              onApplyStatus={applyBulkStatus}
-              onDelete={bulkDelete}
-              loading={bulkLoading}
-            />
+            {isAdmin && (
+              <BulkActions
+                selectedCount={selectedIds.length}
+                onClear={() => setSelectedIds([])}
+                onApplyStatus={applyBulkStatus}
+                onDelete={bulkDelete}
+                loading={bulkLoading}
+              />
+            )}
 
             {/* Filters */}
             <FilterBar
@@ -537,6 +557,9 @@ function Dashboard() {
                 setStockAdjustOpen(true);
               }}
               totalProducts={data.total}
+              canAdjustStock={isMgr}
+              canAddProduct={isMgr}
+              canExport={isMgr}
             />
 
             {/* Table — PHASE 8: pass role flags so table can hide restricted actions */}
@@ -604,16 +627,18 @@ function Dashboard() {
                 </p>
               </div>
               {/* PHASE 6: Import CSV button in catalog header */}
-              <button
-                id="catalog-import-csv-btn"
-                onClick={() => setImportModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold text-white border border-[#27272a] bg-[#0f141c] hover:bg-[#141a26] hover:border-[#3f3f46] transition-all"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 3v12" /><path d="M8 7l4-4 4 4" /><path d="M4 21h16" />
-                </svg>
-                Import CSV
-              </button>
+              {isMgr && (
+                <button
+                  id="catalog-import-csv-btn"
+                  onClick={() => setImportModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold text-white border border-[#27272a] bg-[#0f141c] hover:bg-[#141a26] hover:border-[#3f3f46] transition-all"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 3v12" /><path d="M8 7l4-4 4 4" /><path d="M4 21h16" />
+                  </svg>
+                  Import CSV
+                </button>
+              )}
             </div>
             {/* PHASE 6 IMPLEMENTATION END */}
             <FilterBar
@@ -643,14 +668,19 @@ function Dashboard() {
                 setStockAdjustOpen(true);
               }}
               totalProducts={data.total}
+              canAdjustStock={isMgr}
+              canAddProduct={isMgr}
+              canExport={isMgr}
             />
-            <BulkActions
-              selectedCount={selectedIds.length}
-              onClear={() => setSelectedIds([])}
-              onApplyStatus={applyBulkStatus}
-              onDelete={bulkDelete}
-              loading={bulkLoading}
-            />
+            {isAdmin && (
+              <BulkActions
+                selectedCount={selectedIds.length}
+                onClear={() => setSelectedIds([])}
+                onApplyStatus={applyBulkStatus}
+                onDelete={bulkDelete}
+                loading={bulkLoading}
+              />
+            )}
             {/* PHASE 8: role-gated actions in catalog tab */}
             <ProductTable
               products={data.products}
@@ -691,10 +721,11 @@ function Dashboard() {
               </p>
             </div>
             <InventoryAlerts
-              onAdjustStock={(product) => {
+              onAdjustStock={isMgr ? (product) => {
                 setStockAdjustProductId(product.id);
                 setStockAdjustOpen(true);
-              }}
+              } : undefined}
+              refreshKey={inventoryRefreshKey}
             />
             <AdvancedCharts products={data.products} />
           </div>
@@ -707,12 +738,14 @@ function Dashboard() {
               /* Detail view when a supplier row is clicked */
               <SupplierDetail
                 supplierId={supplierDetailId}
-                onEdit={(s) => {
+                onEdit={isMgr ? (s) => {
                   setEditingSupplier(s);
                   setSupplierModalOpen(true);
-                }}
+                } : undefined}
                 onBack={() => setSupplierDetailId(null)}
-                onUnlinkProduct={() => setSupplierRefreshKey((k) => k + 1)}
+                onUnlinkProduct={isMgr ? () => setSupplierRefreshKey((k) => k + 1) : undefined}
+                canEdit={isMgr}
+                canUnlink={isMgr}
               />
             ) : (
               <>
@@ -738,15 +771,15 @@ function Dashboard() {
                 {/* Paginated supplier table */}
                 <SupplierTable
                   refreshKey={supplierRefreshKey}
-                  onAdd={() => {
+                  onAdd={isMgr ? () => {
                     setEditingSupplier(null);
                     setSupplierModalOpen(true);
-                  }}
-                  onEdit={(s) => {
+                  } : undefined}
+                  onEdit={isMgr ? (s) => {
                     setEditingSupplier(s);
                     setSupplierModalOpen(true);
-                  }}
-                  onDelete={handleSupplierDelete}
+                  } : undefined}
+                  onDelete={isAdmin ? handleSupplierDelete : undefined}
                   onView={(s) => setSupplierDetailId(s.id)}
                 />
               </>
@@ -768,7 +801,12 @@ function Dashboard() {
                 Design and monitor operational flows across catalog, stock, and channels.
               </p>
             </div>
-            <QuickActions onImportClick={() => setImportModalOpen(true)} onTabChange={setActiveTab} />
+            <QuickActions
+              onImportClick={() => setImportModalOpen(true)}
+              onTabChange={setActiveTab}
+              canManageCatalog={isMgr}
+              canViewAudit={isMgr}
+            />
             <InsightsPanel products={data.products} />
           </div>
         )}
@@ -796,18 +834,18 @@ function Dashboard() {
             {/* PO list */}
             <PurchaseOrderList
               onView={(id) => setPODetailId(id)}
-              onCreate={() => {
+              onCreate={isMgr ? () => {
                 setEditingPO(null);
                 setPOModalPrefill(null);
                 setPOModalOpen(true);
-              }}
-              onDelete={handlePODelete}
+              } : undefined}
+              onDelete={isAdmin ? handlePODelete : undefined}
               refreshKey={poRefreshKey}
             />
 
             {/* Reorder suggestions */}
             <ReorderSuggestions
-              onCreatePO={(item) => {
+              onCreatePO={isMgr ? (item) => {
                 setEditingPO(null);
                 setPOModalPrefill({
                   supplier_id:  item.supplier_id  ?? undefined,
@@ -818,7 +856,7 @@ function Dashboard() {
                 });
                 setPOModalOpen(true);
                 setActiveTab("orders");
-              }}
+              } : undefined}
             />
           </div>
         )}
@@ -840,7 +878,7 @@ function Dashboard() {
         {/* PHASE 8 END: Users tab */}
 
         {/* Phase 3: Audit Log tab */}
-        {activeTab === "audit" && (
+        {activeTab === "audit" && isMgr && (
           <div className="space-y-8 animate-fade-in">
             {/* Header */}
             <div className="space-y-2">
@@ -883,7 +921,12 @@ function Dashboard() {
         loading={modalLoading}
         // Phase 2: store supplier selection so handleSubmit can link after save
         onSupplierLink={(productId, supplierId, costPrice, leadDays) => {
-          setPendingSupplierLink({ supplierId, costPrice, leadDays });
+          setPendingSupplierLink({
+            supplierId,
+            costPrice,
+            leadDays,
+            productId: productId > 0 ? productId : undefined,
+          });
         }}
       />
 
@@ -905,43 +948,49 @@ function Dashboard() {
         loading={deleteLoading}
       />
 
-      {/* Phase 2: Supplier create/edit modal */}
-      <SupplierModal
-        isOpen={supplierModalOpen}
-        onClose={() => {
-          setSupplierModalOpen(false);
-          setEditingSupplier(null);
-        }}
-        onSubmit={handleSupplierSubmit}
-        supplier={editingSupplier}
-        loading={supplierModalLoading}
-      />
+        {/* Phase 2: Supplier create/edit modal */}
+        {isMgr && (
+          <SupplierModal
+            isOpen={supplierModalOpen}
+            onClose={() => {
+              setSupplierModalOpen(false);
+              setEditingSupplier(null);
+            }}
+            onSubmit={handleSupplierSubmit}
+            supplier={editingSupplier}
+            loading={supplierModalLoading}
+          />
+        )}
 
       {/* Phase 4: Purchase Order create/edit modal */}
-      <PurchaseOrderModal
-        isOpen={poModalOpen}
-        onClose={() => {
-          setPOModalOpen(false);
-          setEditingPO(null);
-          setPOModalPrefill(null);
-        }}
-        onSubmit={handlePOSubmit}
-        order={editingPO}
-        loading={poModalLoading}
-        prefill={poModalPrefill}
-      />
+        {isMgr && (
+          <PurchaseOrderModal
+            isOpen={poModalOpen}
+            onClose={() => {
+              setPOModalOpen(false);
+              setEditingPO(null);
+              setPOModalPrefill(null);
+            }}
+            onSubmit={handlePOSubmit}
+            order={editingPO}
+            loading={poModalLoading}
+            prefill={poModalPrefill}
+          />
+        )}
 
       {/* Phase 4: Purchase Order detail modal */}
-      <PurchaseOrderDetail
-        poId={poDetailId}
-        onClose={() => setPODetailId(null)}
-        onEdit={(po) => {
-          setPODetailId(null);
-          setEditingPO(po);
-          setPOModalOpen(true);
-        }}
-        onRefresh={() => setPORefreshKey((k) => k + 1)}
-      />
+        <PurchaseOrderDetail
+          poId={poDetailId}
+          onClose={() => setPODetailId(null)}
+          onEdit={isMgr ? (po) => {
+            setPODetailId(null);
+            setEditingPO(po);
+            setPOModalOpen(true);
+          } : undefined}
+          onRefresh={() => setPORefreshKey((k) => k + 1)}
+          canEdit={isMgr}
+          canReceive={isMgr}
+        />
 
       {/* PHASE 6 IMPLEMENTATION START — Batch import modal */}
       {importModalOpen && (

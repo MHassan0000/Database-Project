@@ -26,8 +26,10 @@ interface DetailPO extends PurchaseOrder {
 interface Props {
   poId: number | null;
   onClose: () => void;
-  onEdit: (po: PurchaseOrder) => void;
+  onEdit?: (po: PurchaseOrder) => void;
   onRefresh: () => void;
+  canEdit?: boolean;
+  canReceive?: boolean;
 }
 
 // ── Status config ──────────────────────────────────────────────────────────────
@@ -42,7 +44,14 @@ const STATUS_CONFIG: Record<
   cancelled:{ label: "Cancelled",badge: "bg-red-500/10 text-red-300 border-red-500/20",            icon: Ban       },
 };
 
-export default function PurchaseOrderDetail({ poId, onClose, onEdit, onRefresh }: Props) {
+export default function PurchaseOrderDetail({
+  poId,
+  onClose,
+  onEdit,
+  onRefresh,
+  canEdit = true,
+  canReceive = true,
+}: Props) {
   const [po, setPo]               = useState<DetailPO | null>(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -202,48 +211,48 @@ export default function PurchaseOrderDetail({ poId, onClose, onEdit, onRefresh }
                 })()}
 
                 {/* Transition buttons */}
-                {po.status === "draft" && (
-                  <>
-                    <button
-                      onClick={() => onEdit(po)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#18181b] border border-[#27272a] hover:bg-[#27272a] transition-all"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange("sent")}
-                      disabled={actionLoading}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all disabled:opacity-50"
-                    >
-                      <Send className="w-3.5 h-3.5" /> Mark as Sent
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange("cancelled")}
-                      disabled={actionLoading}
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50"
-                    >
-                      Cancel PO
-                    </button>
-                  </>
-                )}
-                {(po.status === "sent" || po.status === "partial") && (
-                  <>
-                    <button
-                      onClick={() => setShowReceiveForm((p) => !p)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {showReceiveForm ? "Hide Receive" : "Receive Stock"}
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange("cancelled")}
-                      disabled={actionLoading}
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50"
-                    >
-                      Cancel PO
-                    </button>
-                  </>
-                )}
+                 {po.status === "draft" && canEdit && onEdit && (
+                   <>
+                     <button
+                       onClick={() => onEdit(po)}
+                       className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#18181b] border border-[#27272a] hover:bg-[#27272a] transition-all"
+                     >
+                       Edit
+                     </button>
+                     <button
+                       onClick={() => handleStatusChange("sent")}
+                       disabled={actionLoading}
+                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all disabled:opacity-50"
+                     >
+                       <Send className="w-3.5 h-3.5" /> Mark as Sent
+                     </button>
+                     <button
+                       onClick={() => handleStatusChange("cancelled")}
+                       disabled={actionLoading}
+                       className="px-3 py-1.5 rounded-xl text-xs font-semibold text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                     >
+                       Cancel PO
+                     </button>
+                   </>
+                 )}
+                 {(po.status === "sent" || po.status === "partial") && canReceive && (
+                   <>
+                     <button
+                       onClick={() => setShowReceiveForm((p) => !p)}
+                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
+                     >
+                       <CheckCircle2 className="w-3.5 h-3.5" />
+                       {showReceiveForm ? "Hide Receive" : "Receive Stock"}
+                     </button>
+                     <button
+                       onClick={() => handleStatusChange("cancelled")}
+                       disabled={actionLoading}
+                       className="px-3 py-1.5 rounded-xl text-xs font-semibold text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                     >
+                       Cancel PO
+                     </button>
+                   </>
+                 )}
               </div>
 
               {/* Error */}
@@ -344,24 +353,24 @@ export default function PurchaseOrderDetail({ poId, onClose, onEdit, onRefresh }
                 </table>
 
                 {/* Receive confirm button */}
-                {showReceiveForm && (
-                  <div className="px-4 py-4 border-t border-[#1c2233] flex items-center justify-between">
-                    <p className="text-xs text-[#71717a]">
-                      Enter quantities received and confirm to update stock levels.
-                    </p>
-                    <button
-                      onClick={handleReceive}
-                      disabled={actionLoading}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 disabled:opacity-50 transition-all"
-                    >
-                      {actionLoading ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" />Receiving…</>
-                      ) : (
-                        <><CheckCircle2 className="w-4 h-4" />Confirm Receipt</>
-                      )}
-                    </button>
-                  </div>
-                )}
+                 {showReceiveForm && (
+                   <div className="px-4 py-4 border-t border-[#1c2233] flex items-center justify-between">
+                     <p className="text-xs text-[#71717a]">
+                       Enter quantities received and confirm to update stock levels.
+                     </p>
+                     <button
+                       onClick={handleReceive}
+                       disabled={actionLoading}
+                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 disabled:opacity-50 transition-all"
+                     >
+                       {actionLoading ? (
+                         <><Loader2 className="w-4 h-4 animate-spin" />Receiving…</>
+                       ) : (
+                         <><CheckCircle2 className="w-4 h-4" />Confirm Receipt</>
+                       )}
+                     </button>
+                   </div>
+                 )}
               </div>
 
               {/* Totals */}

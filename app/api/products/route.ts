@@ -106,13 +106,21 @@ export async function GET(request: NextRequest) {
       query(
         `SELECT p.*,
                 pi.url AS primary_image_url,
-                pi.thumbnail_url AS primary_thumbnail_url
+                pi.thumbnail_url AS primary_thumbnail_url,
+                ps.supplier_id AS primary_supplier_id,
+                ps.cost_price AS primary_supplier_cost,
+                ps.lead_days AS primary_supplier_lead_days,
+                s.name AS primary_supplier_name
          FROM products p
           LEFT JOIN LATERAL (
             SELECT url, thumbnail_url FROM product_images
             WHERE product_id = p.id AND tenant_id = p.tenant_id AND is_primary = true
             ORDER BY sort_order ASC LIMIT 1
           ) pi ON true
+          LEFT JOIN product_suppliers ps
+            ON ps.product_id = p.id AND ps.tenant_id = p.tenant_id AND ps.is_primary = true
+          LEFT JOIN suppliers s
+            ON s.id = ps.supplier_id AND s.tenant_id = p.tenant_id
           ${tenantClause}
           ORDER BY p.${safeSortBy} ${safeSortOrder}
           LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}`,

@@ -18,6 +18,27 @@ interface StockAdjustForm {
   note: string;
 }
 
+const REASON_SIGN: Record<string, "add" | "subtract" | "both"> = {
+  restock: "add",
+  sale: "subtract",
+  return: "add",
+  audit: "both",
+  damage: "subtract",
+  adjustment: "both",
+  recount: "both",
+  received: "add",
+  sold: "subtract",
+};
+
+const REASON_OPTIONS = [
+  { value: "restock", label: "Restock (+)" },
+  { value: "sale", label: "Sale (-)" },
+  { value: "return", label: "Return (+)" },
+  { value: "audit", label: "Audit (+/-)" },
+  { value: "damage", label: "Damage (-)" },
+  { value: "adjustment", label: "Adjustment (+/-)" },
+];
+
 const emptyForm: StockAdjustForm = {
   productId: "",
   delta: "",
@@ -67,13 +88,24 @@ export default function StockAdjustModal({
       return;
     }
 
+    const deltaNum = Number(form.delta);
+    const signRule = REASON_SIGN[form.reason] ?? "both";
+    if (signRule === "add" && deltaNum < 0) {
+      showToast("Selected reason requires a positive quantity", "warning");
+      return;
+    }
+    if (signRule === "subtract" && deltaNum > 0) {
+      showToast("Selected reason requires a negative quantity", "warning");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`/api/products/${form.productId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          delta: Number(form.delta),
+          delta: deltaNum,
           reason: form.reason,
           note: form.note,
         }),
@@ -143,7 +175,13 @@ export default function StockAdjustModal({
                 type="number"
                 value={form.delta}
                 onChange={(e) => handleChange("delta", e.target.value)}
-                placeholder="e.g. 12 or -5"
+                placeholder={
+                  form.reason === "sale" || form.reason === "damage"
+                    ? "e.g. -5"
+                    : form.reason === "restock" || form.reason === "return"
+                    ? "e.g. 12"
+                    : "e.g. 12 or -5"
+                }
                 className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white placeholder:text-[#667085]"
               />
             </div>
@@ -151,15 +189,26 @@ export default function StockAdjustModal({
               <label className="block text-sm font-semibold text-white mb-1.5">Reason</label>
               <select
                 value={form.reason}
-                onChange={(e) => handleChange("reason", e.target.value)}
+                onChange={(e) => {
+                  const nextReason = e.target.value;
+                  const deltaVal = Number(form.delta || 0);
+                  if (deltaVal !== 0) {
+                    const rule = REASON_SIGN[nextReason] ?? "both";
+                    if (rule === "add" && deltaVal < 0) {
+                      handleChange("delta", String(Math.abs(deltaVal)));
+                    } else if (rule === "subtract" && deltaVal > 0) {
+                      handleChange("delta", String(-Math.abs(deltaVal)));
+                    }
+                  }
+                  handleChange("reason", nextReason);
+                }}
                 className="w-full px-4 py-2.5 rounded-xl border border-[#1c2333] text-sm transition-all hover:border-[#2a344a] bg-[#0f141c] text-white appearance-none cursor-pointer"
               >
-                <option value="restock">Restock</option>
-                <option value="sale">Sale</option>
-                <option value="return">Return</option>
-                <option value="audit">Audit</option>
-                <option value="damage">Damage</option>
-                <option value="adjustment">Adjustment</option>
+                {REASON_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

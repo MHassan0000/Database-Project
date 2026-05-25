@@ -22,8 +22,8 @@ interface PaginatedPOResponse {
 
 interface Props {
   onView:   (poId: number)       => void;
-  onCreate: ()                   => void;
-  onDelete: (po: PurchaseOrder)  => void;
+  onCreate?: ()                  => void;
+  onDelete?: (po: PurchaseOrder) => void;
   refreshKey?: number;
 }
 
@@ -124,13 +124,15 @@ export default function PurchaseOrderList({
           </div>
         </div>
 
-        <button
-          onClick={onCreate}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          New Order
-        </button>
+        {onCreate && (
+          <button
+            onClick={onCreate}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            New Order
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -243,7 +245,7 @@ export default function PurchaseOrderList({
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          {po.status === "draft" && (
+                          {po.status === "draft" && onDelete && (
                             <button
                               onClick={() => onDelete(po)}
                               className="p-2 rounded-lg hover:bg-red-500/10 text-[#71717a] hover:text-red-400 transition-all"

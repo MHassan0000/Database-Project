@@ -24,6 +24,9 @@ interface FilterBarProps {
   onAddProduct: () => void;
   onStockAdjust: () => void;
   totalProducts: number;
+  canAdjustStock?: boolean;
+  canAddProduct?: boolean;
+  canExport?: boolean;
 }
 
 export default function FilterBar({
@@ -47,6 +50,9 @@ export default function FilterBar({
   onAddProduct,
   onStockAdjust,
   totalProducts,
+  canAdjustStock = true,
+  canAddProduct = true,
+  canExport = true,
 }: FilterBarProps) {
   const [categories, setCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -133,37 +139,43 @@ export default function FilterBar({
             )}
           </button>
 
-          <button
-            onClick={onStockAdjust}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-white border border-[#1c2333] bg-[#0f141c] hover:bg-[#141a26] transition-all"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 12h18" />
-              <path d="M12 3v18" />
-            </svg>
-            <span className="hidden sm:inline">Adjust Stock</span>
-          </button>
-          <a
-            href={exportUrl}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-white border border-[#1c2333] bg-[#0f141c] hover:bg-[#141a26] transition-all"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 3v12" />
-              <path d="M8 11l4 4 4-4" />
-              <path d="M4 21h16" />
-            </svg>
-            <span className="hidden sm:inline">Export CSV</span>
-          </a>
-          <button
-            onClick={onAddProduct}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 shadow-lg shadow-black/30 transition-all"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            <span className="hidden sm:inline">Add Product</span>
-          </button>
+          {canAdjustStock && (
+            <button
+              onClick={onStockAdjust}
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-white border border-[#1c2333] bg-[#0f141c] hover:bg-[#141a26] transition-all"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 12h18" />
+                <path d="M12 3v18" />
+              </svg>
+              <span className="hidden sm:inline">Adjust Stock</span>
+            </button>
+          )}
+          {canExport && (
+            <a
+              href={exportUrl}
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-white border border-[#1c2333] bg-[#0f141c] hover:bg-[#141a26] transition-all"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 3v12" />
+                <path d="M8 11l4 4 4-4" />
+                <path d="M4 21h16" />
+              </svg>
+              <span className="hidden sm:inline">Export CSV</span>
+            </a>
+          )}
+          {canAddProduct && (
+            <button
+              onClick={onAddProduct}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 shadow-lg shadow-black/30 transition-all"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span className="hidden sm:inline">Add Product</span>
+            </button>
+          )}
         </div>
       </div>
 

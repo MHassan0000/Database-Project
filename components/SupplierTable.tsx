@@ -8,10 +8,10 @@ import { Supplier } from "@/lib/types";
 import { Truck, Plus, Search, ChevronUp, ChevronDown, ChevronsUpDown, Eye, Pencil, Trash2 } from "lucide-react";
 
 interface SupplierTableProps {
-  onAdd: () => void;
-  onEdit: (supplier: Supplier) => void;
-  onDelete: (supplier: Supplier) => void;
-  onView: (supplier: Supplier) => void;
+  onAdd?: () => void;
+  onEdit?: (supplier: Supplier) => void;
+  onDelete?: (supplier: Supplier) => void;
+  onView?: (supplier: Supplier) => void;
   refreshKey?: number; // increment to force refresh after create/update
 }
 
@@ -176,13 +176,15 @@ export default function SupplierTable({
           </select>
 
           {/* Add supplier */}
-          <button
-            onClick={onAdd}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 transition-all shadow-md shadow-black/30"
-          >
-            <Plus className="w-4 h-4" />
-            Add Supplier
-          </button>
+          {onAdd && (
+            <button
+              onClick={onAdd}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 transition-all shadow-md shadow-black/30"
+            >
+              <Plus className="w-4 h-4" />
+              Add Supplier
+            </button>
+          )}
         </div>
       </div>
 
@@ -247,11 +249,11 @@ export default function SupplierTable({
                           ? "Try adjusting your search or filters"
                           : "Add your first supplier to get started"}
                       </p>
-                      {!searchDebounce && status === "all" && (
-                        <button
-                          onClick={onAdd}
-                          className="mt-1 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 transition-all"
-                        >
+                       {!searchDebounce && status === "all" && onAdd && (
+                         <button
+                           onClick={onAdd}
+                           className="mt-1 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-black bg-white hover:bg-zinc-200 transition-all"
+                         >
                           <Plus className="w-4 h-4" /> Add Supplier
                         </button>
                       )}
@@ -271,12 +273,18 @@ export default function SupplierTable({
                           <Truck className="w-4 h-4 text-[#71717a]" />
                         </div>
                         <div className="min-w-0">
-                          <button
-                            onClick={() => onView(supplier)}
-                            className="text-sm font-semibold text-white hover:text-zinc-300 transition-colors text-left truncate max-w-48 block"
-                          >
-                            {supplier.name}
-                          </button>
+                           {onView ? (
+                             <button
+                               onClick={() => onView(supplier)}
+                               className="text-sm font-semibold text-white hover:text-zinc-300 transition-colors text-left truncate max-w-48 block"
+                             >
+                               {supplier.name}
+                             </button>
+                           ) : (
+                             <span className="text-sm font-semibold text-white truncate max-w-48 block">
+                               {supplier.name}
+                             </span>
+                           )}
                           {supplier.contact_person && (
                             <p className="text-xs text-[#71717a] truncate max-w-48">
                               {supplier.contact_person}
@@ -335,27 +343,33 @@ export default function SupplierTable({
                     {/* Actions */}
                     <td className="px-4 py-3.5">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => onView(supplier)}
-                          className="p-2 rounded-lg hover:bg-[#141a26] text-[#8b93a7] hover:text-white transition-all"
-                          title="View details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onEdit(supplier)}
-                          className="p-2 rounded-lg hover:bg-[#27272a] text-[#a1a1aa] hover:text-white transition-all"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(supplier)}
-                          className="p-2 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {onView && (
+                          <button
+                            onClick={() => onView(supplier)}
+                            className="p-2 rounded-lg hover:bg-[#141a26] text-[#8b93a7] hover:text-white transition-all"
+                            title="View details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        )}
+                        {onEdit && (
+                          <button
+                            onClick={() => onEdit(supplier)}
+                            className="p-2 rounded-lg hover:bg-[#27272a] text-[#a1a1aa] hover:text-white transition-all"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={() => onDelete(supplier)}
+                            className="p-2 rounded-lg hover:bg-red-500/10 text-[#8b93a7] hover:text-red-300 transition-all"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

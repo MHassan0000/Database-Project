@@ -7,12 +7,12 @@ import { useEffect, useState } from "react";
 import { Truck, CheckCircle, Clock, Star } from "lucide-react";
 
 interface SupplierStatsData {
-  total: number;
-  active: number;
-  inactive: number;
-  avgLeadDays: number;
-  avgRating: number;
-  topSuppliers: { id: number; name: string; linked_products: number; status: string }[];
+  total?: number;
+  active?: number;
+  inactive?: number;
+  avgLeadDays?: number;
+  avgRating?: number;
+  topSuppliers?: { id: number; name: string; linked_products: number; status: string }[];
 }
 
 function StatCard({
@@ -95,30 +95,36 @@ export default function SupplierStats() {
     );
   }
 
+  const total = stats.total ?? 0;
+  const active = stats.active ?? 0;
+  const inactive = stats.inactive ?? 0;
+  const avgLeadDays = stats.avgLeadDays ?? 0;
+  const avgRating = stats.avgRating ?? 0;
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
         icon={<Truck className="w-5 h-5" />}
         label="Total Suppliers"
-        value={stats.total}
-        sub={`${stats.inactive} inactive`}
+        value={total}
+        sub={`${inactive} inactive`}
       />
       <StatCard
         icon={<CheckCircle className="w-5 h-5" />}
         label="Active Suppliers"
-        value={stats.active}
-        sub={stats.total > 0 ? `${Math.round((stats.active / stats.total) * 100)}% of total` : undefined}
+        value={active}
+        sub={total > 0 ? `${Math.round((active / total) * 100)}% of total` : undefined}
       />
       <StatCard
         icon={<Clock className="w-5 h-5" />}
         label="Avg Lead Time"
-        value={`${stats.avgLeadDays || 0}d`}
+        value={`${avgLeadDays || 0}d`}
         sub="across all products"
       />
       <StatCard
         icon={<Star className="w-5 h-5" />}
         label="Avg Rating"
-        value={stats.avgRating ? stats.avgRating.toFixed(1) : "—"}
+        value={avgRating ? avgRating.toFixed(1) : "—"}
         sub="supplier quality score"
       />
     </div>

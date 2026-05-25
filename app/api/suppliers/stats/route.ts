@@ -8,7 +8,7 @@ import { requireRole } from "@/lib/auth";
 // PHASE 8 FIX END
 
 export async function GET(request: NextRequest) {
-  const auth = await requireRole(request, ["admin", "manager"]);
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
   if (!auth.ok) return auth.response;
   try {
 

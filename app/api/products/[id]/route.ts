@@ -17,10 +17,19 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const result = await query("SELECT * FROM products WHERE id = $1 AND tenant_id = $2", [
-      parseInt(id),
-      auth.user.tenant_id,
-    ]);
+    const result = await query(
+      `SELECT p.*,
+              ps.supplier_id AS primary_supplier_id,
+              ps.cost_price AS primary_supplier_cost,
+              ps.lead_days AS primary_supplier_lead_days
+       FROM products p
+       LEFT JOIN product_suppliers ps
+         ON ps.product_id = p.id
+        AND ps.tenant_id = p.tenant_id
+        AND ps.is_primary = true
+       WHERE p.id = $1 AND p.tenant_id = $2`,
+      [parseInt(id), auth.user.tenant_id]
+    );
 
     if (result.rows.length === 0) {
       return Response.json({ error: "Product not found" }, { status: 404 });
@@ -185,6 +194,32 @@ export async function PATCH(
       );
     }
 
+    const deltaNum = Number(delta);
+    const reasonRule: Record<string, "add" | "subtract" | "both"> = {
+      restock: "add",
+      sale: "subtract",
+      return: "add",
+      audit: "both",
+      damage: "subtract",
+      adjustment: "both",
+      recount: "both",
+      received: "add",
+      sold: "subtract",
+    };
+    const rule = reasonRule[reason || "adjustment"] ?? "both";
+    if (rule === "add" && deltaNum < 0) {
+      return Response.json(
+        { error: "Reason requires a positive quantity" },
+        { status: 400 }
+      );
+    }
+    if (rule === "subtract" && deltaNum > 0) {
+      return Response.json(
+        { error: "Reason requires a negative quantity" },
+        { status: 400 }
+      );
+    }
+
     const updatedProduct = await withTransaction(async (client) => {
       const productResult = await client.query(
         "SELECT id, stock FROM products WHERE id = $1 AND tenant_id = $2 FOR UPDATE",
@@ -196,7 +231,7 @@ export async function PATCH(
       }
 
       const currentStock = Number(productResult.rows[0].stock);
-      const nextStock = currentStock + Number(delta);
+      const nextStock = currentStock + deltaNum;
       if (nextStock < 0) {
         throw new Error("Stock cannot go below zero");
       }
@@ -212,7 +247,7 @@ export async function PATCH(
         [
           auth.user.tenant_id,
           parseInt(id),
-          Number(delta),
+          deltaNum,
           reason || "adjustment",
           note || "",
           nextStock,
@@ -232,12 +267,12 @@ export async function PATCH(
       entityType: "product",
       entityId: parseInt(id),
       entityName: updatedProduct.name,
-      details: {
-        delta: Number(delta),
-        reason: reason || "adjustment",
-        note: note || "",
-        stock_after: updatedProduct.stock,
-      },
+        details: {
+          delta: deltaNum,
+          reason: reason || "adjustment",
+          note: note || "",
+          stock_after: updatedProduct.stock,
+        },
       performedBy: auth.user.email,
       tenantId: auth.user.tenant_id,
     });

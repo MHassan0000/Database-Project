@@ -14,9 +14,17 @@ interface QuickActionsProps {
   onImportClick?: () => void;
   /** Switch to another top-level tab (wired from page.tsx) */
   onTabChange?: (tab: string) => void;
+  /** Hide restricted actions for viewers */
+  canManageCatalog?: boolean;
+  canViewAudit?: boolean;
 }
 
-export default function QuickActions({ onImportClick, onTabChange }: QuickActionsProps) {
+export default function QuickActions({
+  onImportClick,
+  onTabChange,
+  canManageCatalog = true,
+  canViewAudit = true,
+}: QuickActionsProps) {
   const [toast, setToast] = useState<string | null>(null);
 
   function showToast(msg: string) {
@@ -30,24 +38,26 @@ export default function QuickActions({ onImportClick, onTabChange }: QuickAction
       desc: "Upload CSV to bulk-add products",
       icon: Upload,
       onClick: () => {
-        if (onImportClick) {
+        if (onImportClick && canManageCatalog) {
           onImportClick();
         } else {
           showToast("Import is not available here.");
         }
       },
-      active: true,
+      active: canManageCatalog,
     },
     {
       title: "View Audit Log",
       desc: "Browse all system activity",
       icon: RefreshCw,
       onClick: () => {
-        if (onTabChange) {
+        if (onTabChange && canViewAudit) {
           onTabChange("audit");
+        } else {
+          showToast("Audit log access is restricted.");
         }
       },
-      active: true,
+      active: canViewAudit,
     },
     {
       title: "Create Workflow",

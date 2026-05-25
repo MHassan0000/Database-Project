@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 50) : 5;
 
     const lowStockResult = await query(
-      "SELECT * FROM products WHERE tenant_id = $1 AND stock > 0 AND stock <= 10 ORDER BY stock ASC, id DESC LIMIT $2",
+      "SELECT * FROM products WHERE tenant_id = $1 AND stock > 0 AND stock <= COALESCE(reorder_point, 10) ORDER BY stock ASC, id DESC LIMIT $2",
       [auth.user.tenant_id, limit]
     );
 

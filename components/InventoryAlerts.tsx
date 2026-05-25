@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Product } from "@/lib/types";
 
 interface InventoryAlertsProps {
-  onAdjustStock: (product: Product) => void;
+  onAdjustStock?: (product: Product) => void;
+  refreshKey?: number;
+  pollMs?: number;
 }
 
 interface AlertsPayload {
@@ -23,7 +25,7 @@ function AlertList({
   subtitle: string;
   items: Product[];
   accent: string;
-  onAdjustStock: (product: Product) => void;
+  onAdjustStock?: (product: Product) => void;
 }) {
   return (
     <div className="ambient-card rounded-3xl p-5">
@@ -57,12 +59,14 @@ function AlertList({
               <p className={`text-sm font-semibold ${accent.includes("red") ? "text-red-300" : "text-amber-200"}`}>
                 Stock {product.stock}
               </p>
-              <button
-                onClick={() => onAdjustStock(product)}
-                className="text-xs font-semibold text-white hover:text-zinc-300 transition-colors"
-              >
-                Adjust
-              </button>
+              {onAdjustStock && (
+                <button
+                  onClick={() => onAdjustStock(product)}
+                  className="text-xs font-semibold text-white hover:text-zinc-300 transition-colors"
+                >
+                  Adjust
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -71,15 +75,11 @@ function AlertList({
   );
 }
 
-export default function InventoryAlerts({ onAdjustStock }: InventoryAlertsProps) {
+export default function InventoryAlerts({ onAdjustStock, refreshKey, pollMs = 30000 }: InventoryAlertsProps) {
   const [data, setData] = useState<AlertsPayload>({ lowStock: [], outOfStock: [] });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAlerts();
-  }, []);
-
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/products/alerts?limit=4");
@@ -91,7 +91,17 @@ export default function InventoryAlerts({ onAdjustStock }: InventoryAlertsProps)
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAlerts();
+  }, [fetchAlerts, refreshKey]);
+
+  useEffect(() => {
+    if (!pollMs || pollMs <= 0) return;
+    const interval = setInterval(fetchAlerts, pollMs);
+    return () => clearInterval(interval);
+  }, [fetchAlerts, pollMs]);
 
   if (loading) {
     return (

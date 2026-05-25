@@ -54,20 +54,26 @@ export default function PurchaseOrderModal({
   const [expectedDate, setExpectedDate] = useState("");
   const [notes, setNotes]             = useState("");
   const [tax, setTax]                 = useState<number | string>(0);
+  const [taxRate, setTaxRate]         = useState(0);
   const [lineItems, setLineItems]     = useState<LineItemDraft[]>([]);
   const [error, setError]             = useState<string | null>(null);
 
   // Load suppliers and products once when modal opens
   const loadOptions = useCallback(async () => {
     try {
-      const [sRes, pRes] = await Promise.all([
+      const [sRes, pRes, tRes] = await Promise.all([
         fetch("/api/suppliers?limit=100&status=active"),
         fetch("/api/products?limit=200&status=active"),
+        fetch("/api/settings/tax"),
       ]);
       const sData = await sRes.json();
       const pData = await pRes.json();
       setSuppliers(sData.suppliers ?? []);
       setProducts(pData.products ?? []);
+      if (tRes.ok) {
+        const tData = await tRes.json();
+        setTaxRate(Number(tData?.tax_rate ?? 0));
+      }
     } catch {
       // Non-fatal
     }
@@ -150,7 +156,10 @@ export default function PurchaseOrderModal({
     0
   );
   const taxNum = Math.max(0, Number(tax || 0));
-  const total  = subtotal + taxNum;
+  const computedTax = Math.max(0, subtotal * (taxRate / 100));
+  const isTaxAuto = taxNum === 0 && taxRate > 0;
+  const effectiveTax = isTaxAuto ? computedTax : taxNum;
+  const total  = subtotal + effectiveTax;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +179,7 @@ export default function PurchaseOrderModal({
       supplier_id: Number(supplierId),
       expected_date: expectedDate || undefined,
       notes,
-      tax: taxNum,
+      tax: isTaxAuto ? computedTax : taxNum,
       items: validItems.map((li) => ({
         product_id: Number(li.product_id),
         quantity: Number(li.quantity),
@@ -242,7 +251,7 @@ export default function PurchaseOrderModal({
             </div>
 
             {/* Dates + Notes */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-[#8b93a7]">
                   Expected Delivery Date
@@ -267,6 +276,11 @@ export default function PurchaseOrderModal({
                   className={inputClass}
                   placeholder="0.00"
                 />
+                {taxRate > 0 && (
+                  <p className="text-[10px] text-[#52525b]">
+                    Default {taxRate}% ({`$${computedTax.toFixed(2)}`}) applied when tax is 0.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -360,14 +374,14 @@ export default function PurchaseOrderModal({
             </div>
 
             {/* Totals */}
-            <div className="border-t border-[#1c2233] pt-4 space-y-1.5">
+             <div className="border-t border-[#1c2233] pt-4 space-y-1.5">
               <div className="flex justify-between text-xs text-[#8b93a7]">
                 <span>Subtotal</span>
                 <span className="font-mono">${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs text-[#8b93a7]">
                 <span>Tax</span>
-                <span className="font-mono">${taxNum.toFixed(2)}</span>
+                <span className="font-mono">${effectiveTax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm font-bold text-white border-t border-[#1c2233] pt-1.5">
                 <span>Total</span>

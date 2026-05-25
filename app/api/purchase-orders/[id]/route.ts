@@ -1,5 +1,5 @@
 // Phase 4 — app/api/purchase-orders/[id]/route.ts
-// GET    /api/purchase-orders/[id] — single PO with items + supplier (admin/manager)
+// GET    /api/purchase-orders/[id] — single PO with items + supplier (admin/manager/viewer)
 // PUT    /api/purchase-orders/[id] — update draft PO (admin/manager)
 // DELETE /api/purchase-orders/[id] — delete draft PO only (admin only)
 
@@ -19,7 +19,7 @@ export async function GET(
   { params }: RouteContext
 ) {
   // PHASE 8 START
-  const auth = await requireRole(request, ["admin", "manager"]);
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {

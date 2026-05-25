@@ -196,7 +196,7 @@ export default function ReorderSuggestions({ onCreatePO }: Props) {
 
                     {/* Create PO action */}
                     <td className="px-4 py-4">
-                      {onCreatePO && (
+                      {onCreatePO ? (
                         <button
                           onClick={() => onCreatePO(item)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#18181b] border border-[#27272a] hover:bg-[#27272a] hover:border-white/10 transition-all opacity-0 group-hover:opacity-100"
@@ -204,6 +204,8 @@ export default function ReorderSuggestions({ onCreatePO }: Props) {
                           Create PO
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>
+                      ) : (
+                        <span className="text-[10px] text-[#52525b]">View only</span>
                       )}
                     </td>
                   </tr>

@@ -13,7 +13,7 @@ import { requireRole } from "@/lib/auth";
 // ── GET /api/purchase-orders ──────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   // PHASE 8 START
-  const auth = await requireRole(request, ["admin", "manager"]);
+  const auth = await requireRole(request, ["admin", "manager", "viewer"]);
   if (!auth.ok) return auth.response;
   // PHASE 8 END
   try {
